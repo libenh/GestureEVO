@@ -297,6 +297,7 @@ class GestureAddActionActivity : AppCompatActivity() {
         binding.subWheelSummary.setText(R.string.gesture_add_action_sub_wheel_loading)
         lifecycleScope.launch {
             val groups = GestureActionDataManager.readActionListTags(applicationContext)
+            if (actionItem.subActionListTag != selectedTag || isFinishing) return@launch
             val selectedGroup = groups.firstOrNull { it.tag == selectedTag }
             binding.subWheelSummary.text = selectedGroup?.let {
                 getString(R.string.gesture_add_action_sub_wheel_current, it.name)
