@@ -36,7 +36,7 @@
     <string name="about_contact_detail">GitHub Issues</string>
     <string name="action_items_tag_select_title">选择轮盘组</string>
     <string name="action_items_tag_select_subtitle">选择要使用的轮盘组</string>
-    <string name="action_view_settings_title">快捷轮盘</string>
+    <string name="action_view_settings_title">轮盘</string>
     <string name="action_view_settings_title_with_group">轮盘 - %1$s</string>
     <string name="action_view_settings_preview_title">轮盘预览</string>
     <string name="action_view_settings_preview_button">预览轮盘</string>
@@ -87,7 +87,7 @@
     <string name="external_call_not_selected">未选择</string>
     <string name="external_call_summary_format">轮盘组：%1$s\n触发器：%2$s</string>
     <string name="external_call_link_copied">外部调用 Link 已复制</string>
-    <string name="external_action_settings_title">快捷调用</string>
+    <string name="external_action_settings_title">外部功能调用</string>
     <string name="external_action_editor_title">新建外部调用</string>
     <string name="external_action_editor_description">在这里可以为第三方应用创建调用入口。配置完成后，会直接得到一个可供外部使用的内部 Link。</string>
     <string name="external_action_config_title">功能配置</string>
@@ -433,8 +433,8 @@
     <string name="settings_search_empty_title">没有找到匹配的设置项</string>
     <string name="settings_search_empty_description">试试更短的关键词，或换一个同义词来搜索。</string>
     <string name="settings_search_box_transition_name" translatable="false">settings_search_box</string>
-    <string name="settings_gesture_title">边缘手势</string>
-    <string name="settings_features_title">屏幕工具</string>
+    <string name="settings_gesture_title">手势</string>
+    <string name="settings_features_title">功能</string>
     <string name="settings_about_title">关于</string>
     <string name="settings_accessibility_running">服务正在运行</string>
     <string name="settings_accessibility_off">请确保无障碍服务是打开的!</string>
@@ -478,9 +478,9 @@
 
     <!-- Inspire Settings Strings -->
     <string name="inspire_settings_title">功能设置</string>
-    <string name="inspire_settings_accessibility_title">页面文字识别</string>
+    <string name="inspire_settings_accessibility_title">无障碍设置</string>
     <string name="inspire_settings_accessibility_description">按应用设置无障碍使用限制</string>
-    <string name="accessibility_blacklist_title">功能排除名单</string>
+    <string name="accessibility_blacklist_title">无障碍黑名单</string>
     <string name="accessibility_blacklist_summary">在名单内的应用中，EVO 不会模拟点击、滑动、自动输入或读取无障碍页面内容，长按拖放也不可用。截图和截图文字识别仍可使用。</string>
     <plurals name="accessibility_blacklist_count">
         <item quantity="other">已添加 %d 个应用</item>
@@ -1075,7 +1075,7 @@
     <string name="link_settings_small_window_title">小窗打开</string>
     <string name="link_settings_small_window_desc">分发规则触发时用 GEVO 小窗打开链接目标，关闭则全屏打开</string>
     <string name="link_settings_radar_desc">指针靠近屏幕上的链接时高亮并显示打开气泡，点击气泡按规则跳转</string>
-    <string name="link_settings_title">链接打开方式</string>
+    <string name="link_settings_title">链接分发</string>
     <string name="link_settings_tools_title">工具</string>
     <string name="link_settings_tools_summary">规则模板、域名豁免与链接提取</string>
     <string name="link_settings_templates_summary">一键添加常用站点的深链规则</string>
@@ -1089,7 +1089,7 @@
     <string name="link_open_action_delete">删除</string>
     <string name="default_trigger_name">默认触发器</string>
     <string name="default_action_tag_name">默认</string>
-    <string name="root_shizuku_permission_failed">Root 权限获取失败</string>
+    <string name="root_shizuku_permission_failed">Root(Shizuku)权限获取失败</string>
     <string name="shizuku_call_failed">Shizuku 调用失败</string>
     <string name="shizuku_request_permission">请求 Shizuku 权限</string>
     <string name="share_open_app_failed">应用启动失败</string>
@@ -1426,7 +1426,7 @@
     <string name="global_press_cancel_failed">背景触摸取消失败，原页面可能继续滑动；请导出日志中的 EVO-TouchBlock 记录</string>
     <string name="global_press_status_standard_ready">Shizuku 已连接</string>
     <string name="global_press_status_unavailable">连接失败：检查 Shizuku 服务、授权及触屏权限</string>
-    <string name="global_press_title">长按拖放</string>
+    <string name="global_press_title">全局长按拖放</string>
     <string name="global_press_description">仅对白名单中的应用生效。\n按住文字或可见图片，轻振后移动开始识别，内容就绪后拖向面板投放。\n可开启“长按超时后直接开始”，无需移动即可识别；轻振需开启振动。</string>
     <string name="global_press_timeout">移动前按住时长</string>
     <string name="global_press_allowed">长按拖放白名单</string>
@@ -1496,7 +1496,7 @@
     <string name="pointer_hover_select">框选</string>
     <string name="pointer_hover_choose_link">选择链接…</string>
     <string name="pointer_hover_action_failed">操作未完成，请重试</string>
-    <string name="screen_content_link_radar_title">屏幕链接识别</string>
+    <string name="screen_content_link_radar_title">屏幕内容链接雷达</string>
     <string name="screen_content_link_radar_summary">框选悬浮窗中高亮链接，轻点打开；从链接上拖动仍可框选</string>
     <string name="screen_content_radar_choose">轻点选择链接</string>
     <string name="screen_content_radar_choose_app">轻点选择打开应用</string>
