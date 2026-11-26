@@ -904,7 +904,7 @@
     <string name="edit_delete_confirm_cancel">取消</string>
     <string name="shortcut_added_by">由 %1$s 添加</string>
     <string name="shortcut_load_failed">加载失败: %1$s</string>
-    <string name="action_view_accessibility_required">请开启无障碍服务后再配置</string>
+    <string name="action_view_accessibility_required">请先授予 GestureEVO Root 权限再进行配置</string>
     <string name="action_view_item_menu_edit">编辑</string>
     <string name="action_view_item_menu_delete">删除</string>
     <string name="action_view_item_menu_submenu">二级轮盘</string>
