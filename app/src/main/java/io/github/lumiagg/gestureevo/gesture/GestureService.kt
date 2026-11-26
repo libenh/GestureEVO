@@ -4,14 +4,12 @@ import io.github.lumiagg.gestureevo.diagnostics.AppLogger
 import io.github.lumiagg.gestureevo.diagnostics.LogLevel
 import io.github.lumiagg.gestureevo.diagnostics.LogModule
 import android.accessibilityservice.AccessibilityService
-import android.accessibilityservice.GestureDescription
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.Path
 import android.os.Build
 import android.os.PowerManager
 import android.util.Log
@@ -45,22 +43,15 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.resume
 
 
 /**
  * 手势运行时服务，负责连接系统事件入口，并托管手势协调器与全局拖拽会话。
  *
  * 当前实现还提供系统截图和模拟触摸能力；这些能力与无障碍事件监听并非同一职责，
- * 在迁移到 LSPosed／Shizuku 后应分别替换，不能随服务声明一起直接删除。
+ * 后续应由 RootShell 与独立的 Root 事件监视器接管，不能把这些能力继续绑在无障碍回调上。
  */
 class GestureService : AccessibilityService(), CoroutineScope {
     lateinit var job: Job
