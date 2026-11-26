@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="external_drop_pool">Add to Pin Pool</string>
+    <string name="external_drop_pool">Add to Staging</string>
     <string name="external_drop_previous_page">Hover for previous page</string>
     <string name="external_drop_next_page">Hover for next page</string>
     <string name="external_drop_pin">Pin</string>
-    <string name="external_drop_tokenize">Tokenize</string>
-    <string name="external_drop_added">Added to Pin Pool</string>
+    <string name="external_drop_tokenize">Split text</string>
+    <string name="external_drop_added">Added to Staging</string>
     <string name="external_drop_empty">No text or images to receive</string>
     <string name="external_drop_failed">Unable to read the dropped content</string>
     <string name="app_name">GestureEVO</string>
@@ -716,7 +716,10 @@
     <string name="clipboard_image_process_error">Error processing image</string>
     <string name="inspire_content_ocr_empty">No content recognized</string>
     <string name="inspire_content_accessibility_empty">No content extracted</string>
-    <string name="pin_pool_title">Pin Pool</string>
+    <string name="pin_pool_title">Staging</string>
+    <string name="guide_pin_pool_usage">Tap the title to switch categories. Tap an item for actions, or long-press and drag it to send.</string>
+    <string name="guide_screen_content_usage">Drag on the screen to select an area. Tap a detected text block to select it quickly, then copy, share, or save.</string>
+    <string name="guide_external_drop_usage">Drag text or images from another app and release over a tool. You can also drop content onto a search engine.</string>
     <string name="pin_pool_text_not_found">No text content found</string>
     <string name="pin_pool_image_read_failed">Unable to read image</string>
     <string name="pin_pool_clear_title">Clear "%1$s"</string>
@@ -1153,7 +1156,7 @@
     <string name="appearance_settings_keyboard_description">Adjust keyboard background blur and card appearance</string>
     <string name="appearance_settings_keyboard_background_blur">Background blur (system dependent)</string>
     <string name="appearance_settings_keyboard_card_background_blur">Card background blur</string>
-    <string name="appearance_settings_pin_pool_title">Pin pool settings</string>
+    <string name="appearance_settings_pin_pool_title">Staging settings</string>
     <string name="appearance_settings_pin_pool_description">Adjust pin pool background blur and card appearance</string>
     <string name="appearance_settings_pin_pool_background_blur">Background blur (system dependent)</string>
     <string name="appearance_settings_pin_pool_card_background_blur">Card background blur</string>
