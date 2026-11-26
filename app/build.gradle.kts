@@ -76,9 +76,6 @@ android {
         }
     }
     packaging {
-        resources {
-            merges += "META-INF/xposed/*"
-        }
         // Store the larger AAR libraries compressed in the downloadable APK.
         jniLibs.useLegacyPackaging = true
     }
@@ -136,9 +133,8 @@ dependencies {
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
 
-    // Privileged platform access and the LSPosed module entry API.
+    // Privileged platform access (root execution is the primary backend).
     implementation(libs.bundles.shizuku)
-    compileOnly(libs.libxposed.api)
     implementation(libs.hiddenapibypass)
 
     // Text processing, offline OCR, barcode decoding and WebDAV.
