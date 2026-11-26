@@ -11,7 +11,7 @@
     <string name="app_description">GestureEVO 手势与快捷操作工具</string>
     <string name="settings_root_running">Root 已授权</string>
     <string name="settings_root_off">点击授予 Root 权限</string>
-    <string name="settings_root_summary">用于系统操作、截图和应用状态识别，不需要开启无障碍服务</string>
+    <string name="settings_root_summary">用于系统操作、截图和应用状态识别；部分功能仍依赖无障碍服务</string>
     <string name="action_icon_placeholder">GE</string>
     <string name="action_icon_invisible">透明</string>
     <string name="action_config_item_diameter">图标直径</string>
