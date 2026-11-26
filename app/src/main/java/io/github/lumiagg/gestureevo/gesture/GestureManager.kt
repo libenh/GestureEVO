@@ -639,6 +639,18 @@ class GestureManager(
         )
     }
 
+    /**
+     * Handles foreground application changes reported by RootShell.
+     * Refreshes per-app trigger visibility and invalidates screen-coordinate link snapshots.
+     */
+    fun onForegroundPackageChanged(packageName: String) {
+        freeTriggerFloating.checkTriggerPackage(packageName)
+        if (pointerLinks.active) {
+            pointerLinks.invalidate()
+            if (linkRadarFloatingLazy.isInitialized()) linkRadarFloating.stopSession()
+        }
+    }
+
     fun onAccessibilityInterrupted() {
         cancelPointerHoverInteraction()
         if (inspireFloatingLazy.isInitialized()) inspireFloating.cancelLinkRadar()
