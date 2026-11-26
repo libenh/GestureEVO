@@ -68,7 +68,6 @@ object RootShell {
         3 -> keyEvent(187)     // Recent apps
         4 -> execute("cmd statusbar expand-notifications")
         5 -> execute("cmd statusbar expand-settings")
-        6 -> execute("cmd power")
         8 -> keyEvent(223)     // Lock screen
         else -> RootCommandResult(-1, "Unsupported system action: $action")
     }
