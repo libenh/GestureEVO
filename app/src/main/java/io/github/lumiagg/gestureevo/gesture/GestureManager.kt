@@ -210,7 +210,7 @@ class GestureManager(
         // Accessibility event
         lifecycleScope.launch(Dispatchers.Main) {
             accessibilityActionEventBus.collect {
-                gestureService.performGlobalAction(it.action)
+                gestureService.performGlobalActionRoot(it.action)
             }
         }
         // Text grab / Inspire
