@@ -88,8 +88,14 @@ jobs:
           done
           export GESTUREEVO_KEYSTORE_FILE="$RUNNER_TEMP/gestureevo-release.jks"
           trap 'rm -f -- "$GESTUREEVO_KEYSTORE_FILE"' EXIT
-          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$GESTUREEVO_KEYSTORE_FILE"
+          # Accept standard or URL-safe Base64 and ignore copy/paste formatting characters.
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | tr '_-' '/+' | base64 --decode --ignore-garbage > "$GESTUREEVO_KEYSTORE_FILE"
           chmod 600 "$GESTUREEVO_KEYSTORE_FILE"
+          # Validate the decoded keystore before starting the Android build.
+          if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" -alias "$GESTUREEVO_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Decoded keystore is invalid, incomplete, or does not match the configured password/alias. Re-copy the complete ANDROID_KEYSTORE_BASE64 value from ANDROID_KEYSTORE_BASE64.txt."
+            exit 1
+          fi
           # Bound compiler memory and compile the two variants sequentially.
           sh gradlew :app:testDebugUnitTest --no-daemon --no-configuration-cache --max-workers=2 -Pkotlin.daemon.jvmargs=-Xmx4096m
           sh gradlew :app:assembleRelease --no-daemon --no-configuration-cache --max-workers=2 -Pkotlin.daemon.jvmargs=-Xmx4096m
