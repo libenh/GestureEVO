@@ -27,6 +27,7 @@ import io.github.lumiagg.gestureevo.settings.ui.showEditTextBottomSheet
 import io.github.lumiagg.gestureevo.settings.ui.showPieGroupSelectBottomSheet
 import io.github.lumiagg.gestureevo.settings.ui.triggerDisplayName
 import io.github.lumiagg.gestureevo.utils.ClipboardUtils
+import io.github.lumiagg.gestureevo.utils.root.RootShell
 import io.github.lumiagg.gestureevo.utils.ToastHelper
 import io.github.lumiagg.gestureevo.utils.uriBuilder
 import io.github.lumiagg.gestureevo.utils.app.syncAppCatalog
@@ -133,6 +134,20 @@ class ActionViewSettingsActivity : AppCompatActivity() {
         binding.selectedHintIconSwitch.isEnabled = true
     }
 
+    private fun runWhenRootAvailable(action: () -> Unit) {
+        lifecycleScope.launch {
+            if (!RootShell.isAvailable()) {
+                Toast.makeText(
+                    applicationContext,
+                    getString(R.string.action_view_accessibility_required),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@launch
+            }
+            action()
+        }
+    }
+
     private fun setupListeners() {
         binding.selectPieGroupButton.setOnClickListener { showCurrentPieGroupSelector() }
 
@@ -152,38 +167,7 @@ class ActionViewSettingsActivity : AppCompatActivity() {
         }
 
         binding.pieContentConfigEntry.setOnClickListener {
-            if (!evoAccessibilityServiceIsEnable(applicationContext)) {
-                Toast.makeText(
-                    applicationContext,
-                    getString(R.string.action_view_accessibility_required),
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-            }
-            lifecycleScope.launch {
-                EventBusManager.produceActionViewEvent(
-                    this, ActionViewEvent(
-                        show = true,
-                        workMode = ActionView.WorkMode.CONFIG_MAIN,
-                        mainItemListTag = itemListTag,
-                        triggerConfig = getPreviewTrigger(),
-                        isMirror = previewMirror
-                    )
-                )
-            }
-        }
-
-        // Style button click listener
-        binding.pieStyleConfigEntry.setOnClickListener {
-            if (!evoAccessibilityServiceIsEnable(applicationContext)) {
-                Toast.makeText(
-                    applicationContext,
-                    getString(R.string.action_view_accessibility_required),
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-            }
-            showActionConfigBottomSheet(this, itemListTag, false, lifecycleScope, {
+            runWhenRootAvailable {
                 lifecycleScope.launch {
                     EventBusManager.produceActionViewEvent(
                         this, ActionViewEvent(
@@ -195,30 +179,44 @@ class ActionViewSettingsActivity : AppCompatActivity() {
                         )
                     )
                 }
-            })
+            }
+        }
+
+        // Style button click listener
+        binding.pieStyleConfigEntry.setOnClickListener {
+            runWhenRootAvailable {
+                showActionConfigBottomSheet(this, itemListTag, false, lifecycleScope, {
+                    lifecycleScope.launch {
+                        EventBusManager.produceActionViewEvent(
+                            this, ActionViewEvent(
+                                show = true,
+                                workMode = ActionView.WorkMode.CONFIG_MAIN,
+                                mainItemListTag = itemListTag,
+                                triggerConfig = getPreviewTrigger(),
+                                isMirror = previewMirror
+                            )
+                        )
+                    }
+                })
+            }
         }
 
         binding.pieSubStyleConfigEntry.setOnClickListener {
-            if (!evoAccessibilityServiceIsEnable(applicationContext)) {
-                Toast.makeText(
-                    applicationContext,
-                    getString(R.string.action_view_accessibility_required),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            showActionConfigBottomSheet(this, itemListTag, true, lifecycleScope, {
-                lifecycleScope.launch {
-                    EventBusManager.produceActionViewEvent(
-                        this, ActionViewEvent(
-                            show = true,
-                            workMode = ActionView.WorkMode.CONFIG_SUB,
-                            mainItemListTag = itemListTag,
-                            triggerConfig = getPreviewTrigger(),
-                            isMirror = previewMirror
+            runWhenRootAvailable {
+                showActionConfigBottomSheet(this, itemListTag, true, lifecycleScope, {
+                    lifecycleScope.launch {
+                        EventBusManager.produceActionViewEvent(
+                            this, ActionViewEvent(
+                                show = true,
+                                workMode = ActionView.WorkMode.CONFIG_SUB,
+                                mainItemListTag = itemListTag,
+                                triggerConfig = getPreviewTrigger(),
+                                isMirror = previewMirror
+                            )
                         )
-                    )
-                }
-            })
+                    }
+                })
+            }
         }
 
         // Recent apps blacklist button click listener
