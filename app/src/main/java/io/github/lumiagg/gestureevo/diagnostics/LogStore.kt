@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-enum class LogModule { APP, ACTION, SERVICE, OVERLAY, SHIZUKU, BACKUP, OCR, SYSTEM }
+enum class LogModule { APP, ACTION, SERVICE, OVERLAY, ROOT, SHIZUKU, BACKUP, OCR, SYSTEM }
 enum class LogLevel { DEBUG, INFO, WARN, ERROR }
 
 data class LogRecord(
@@ -43,7 +43,7 @@ data class LogPage(val records: List<LogRecord>, val stats: Pair<Int, Long>, val
 object LogPrivacy {
     private val identifiers = setOf("package", "component", "action", "type", "method", "source", "reason", "thread", "versionName")
     private val numbers = setOf("flags", "durationMs", "count", "width", "height", "dropped", "exitCode", "systemTimeMs", "pid", "versionCode", "httpStatus", "errno")
-    private val booleans = setOf("foreground", "overlay", "accessibility", "shizuku", "freeform")
+    private val booleans = setOf("foreground", "overlay", "accessibility", "root", "shizuku", "freeform")
     fun fields(input: Map<String, Any?>): Map<String, String> = input.mapNotNull { (key, value) ->
         val text = value?.toString() ?: return@mapNotNull null
         val safe = when (key) {
