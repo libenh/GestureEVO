@@ -103,20 +103,21 @@ class GestureAddActionActivity : AppCompatActivity() {
         firstButtonsState.enable = true
         secondButtonsState.enable = true
         if (!externalActionMode) gestureActionIcon(this, binding.actionIcon, actionItem)
-        binding.subWheelButton.visibility = if (externalActionMode || selectTriggerActionMode) View.GONE else View.VISIBLE
+        binding.subWheelPanel.visibility = if (externalActionMode || selectTriggerActionMode) View.GONE else View.VISIBLE
         binding.subWheelButton.setOnClickListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.gesture_add_action_sub_wheel)
-                .setItems(arrayOf(getString(R.string.gesture_add_action_sub_wheel_choose), getString(R.string.gesture_add_action_sub_wheel_clear))) { _, index ->
-                    if (index == 1) {
-                        actionItem.subActionListTag = null
-                    } else {
-                        showPieGroupSelectBottomSheet(this, lifecycleScope,
-                            currentSelectedTag = actionItem.subActionListTag.orEmpty(),
-                            onSelect = { actionItem.subActionListTag = it; renderSubWheelButton() })
-                    }
+            showPieGroupSelectBottomSheet(
+                this,
+                lifecycleScope,
+                currentSelectedTag = actionItem.subActionListTag.orEmpty(),
+                onSelect = {
+                    actionItem.subActionListTag = it
                     renderSubWheelButton()
-                }.show()
+                }
+            )
+        }
+        binding.subWheelClearButton.setOnClickListener {
+            actionItem.subActionListTag = null
+            renderSubWheelButton()
         }
         renderSubWheelButton()
         binding.toolbar.setTitle(if (editMode) R.string.action_editor_edit else R.string.action_editor_title)
@@ -286,8 +287,21 @@ class GestureAddActionActivity : AppCompatActivity() {
     }
 
     private fun renderSubWheelButton() {
-        binding.subWheelButton.setText(if (actionItem.subActionListTag.isNullOrBlank())
-            R.string.gesture_add_action_sub_wheel else R.string.gesture_add_action_sub_wheel_linked)
+        val selectedTag = actionItem.subActionListTag
+        binding.subWheelClearButton.visibility =
+            if (selectedTag.isNullOrBlank()) View.GONE else View.VISIBLE
+        if (selectedTag.isNullOrBlank()) {
+            binding.subWheelSummary.setText(R.string.gesture_add_action_sub_wheel_unset)
+            return
+        }
+        binding.subWheelSummary.setText(R.string.gesture_add_action_sub_wheel_loading)
+        lifecycleScope.launch {
+            val groups = GestureActionDataManager.readActionListTags(applicationContext)
+            val selectedGroup = groups.firstOrNull { it.tag == selectedTag }
+            binding.subWheelSummary.text = selectedGroup?.let {
+                getString(R.string.gesture_add_action_sub_wheel_current, it.name)
+            } ?: getString(R.string.gesture_add_action_sub_wheel_missing)
+        }
     }
 
     private fun fillActionConfig(
