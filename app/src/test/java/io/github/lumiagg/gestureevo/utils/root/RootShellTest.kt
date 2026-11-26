@@ -11,6 +11,6 @@ class RootShellTest {
 
     @Test
     fun quoteEscapesSingleQuotes() {
-        assertEquals("'one'\\\"'\\\"'two'", RootShell.quote("one'two"))
+        assertEquals("'one'\"'\"'two'", RootShell.quote("one'two"))
     }
 }
