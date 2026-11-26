@@ -61,6 +61,18 @@ object RootShell {
         return execute("/system/bin/input keyevent $keyCode")
     }
 
+    /** Replaces the common global navigation actions with root shell equivalents. */
+    suspend fun performGlobalAction(action: Int): RootCommandResult = when (action) {
+        1 -> keyEvent(4)       // Back
+        2 -> keyEvent(3)       // Home
+        3 -> keyEvent(187)     // Recent apps
+        4 -> execute("cmd statusbar expand-notifications")
+        5 -> execute("cmd statusbar expand-settings")
+        6 -> execute("cmd power")
+        8 -> keyEvent(223)     // Lock screen
+        else -> RootCommandResult(-1, "Unsupported system action: $action")
+    }
+
     /**
      * Captures the display through screencap and reads the result from the app cache.
      * This does not depend on AccessibilityService.takeScreenshot().
