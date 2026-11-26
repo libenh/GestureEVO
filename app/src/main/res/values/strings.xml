@@ -730,6 +730,10 @@
     <string name="free_trigger_follow_touch_desc">启用后，该触发器触发的轮盘将以真实触发点为初始位置，而不是触发器中心</string>
     <string name="free_trigger_feedback_title">手势提示</string>
     <string name="free_trigger_feedback_desc">启用后将显示手势提示动画和功能图标。颜色与样式请在应用-外观中调整</string>
+    <string name="gesture_timing_presets_title">快速方案</string>
+    <string name="gesture_timing_presets_desc">先选一套基础参数，再按下方滑块微调。方案只会填入数值，保存后才生效。</string>
+    <string name="gesture_timing_preset_responsive">灵敏响应</string>
+    <string name="gesture_timing_preset_stable">稳妥触发</string>
     <string name="gesture_timing_config_title">手势阈值设置</string>
     <string name="gesture_timing_config_reset">重置</string>
     <string name="gesture_timing_config_save">保存</string>
