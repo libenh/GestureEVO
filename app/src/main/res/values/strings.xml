@@ -1395,6 +1395,10 @@
     <string name="gesture_add_action_sub_wheel_linked">子轮盘：已关联</string>
     <string name="gesture_add_action_sub_wheel_choose">选择轮盘组</string>
     <string name="gesture_add_action_sub_wheel_clear">移除关联</string>
+    <string name="gesture_add_action_sub_wheel_unset">尚未关联轮盘组。选择一个轮盘组后，触发此动作即可展开对应的二级轮盘。</string>
+    <string name="gesture_add_action_sub_wheel_loading">正在读取当前关联的轮盘组…</string>
+    <string name="gesture_add_action_sub_wheel_current">当前关联：%1$s</string>
+    <string name="gesture_add_action_sub_wheel_missing">原关联的轮盘组已不存在，请重新选择或解除关联。</string>
     <string name="gesture_add_action_save_failed">动作保存失败，请重试</string>
     <string name="action_editor_title">动作设置</string>
     <string name="action_editor_edit">编辑动作</string>
