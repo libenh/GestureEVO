@@ -53,9 +53,29 @@
       </LinearLayout>
       <include android:id="@+id/longAction" layout="@layout/activity_gesture_add_action_config"
         android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" />
-      <com.google.android.material.button.MaterialButton android:id="@+id/subWheelButton"
-        style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="@string/gesture_add_action_sub_wheel" />
+      <LinearLayout android:id="@+id/subWheelPanel" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="16dp" android:orientation="vertical"
+        android:padding="16dp" android:background="@drawable/bg_settings_tile">
+        <com.google.android.material.textview.MaterialTextView
+          android:layout_width="match_parent" android:layout_height="wrap_content"
+          android:text="@string/gesture_add_action_sub_wheel" android:textAppearance="?attr/textAppearanceTitleMedium"
+          android:textColor="?attr/colorOnSurface" />
+        <com.google.android.material.textview.MaterialTextView android:id="@+id/subWheelSummary"
+          android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp"
+          android:text="@string/gesture_add_action_sub_wheel_unset" android:textAppearance="?attr/textAppearanceBodyMedium"
+          android:textColor="?attr/colorOnSurfaceVariant" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+          android:layout_marginTop="8dp" android:orientation="horizontal">
+          <com.google.android.material.button.MaterialButton android:id="@+id/subWheelButton"
+            style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="wrap_content"
+            android:text="@string/gesture_add_action_sub_wheel_choose" />
+          <com.google.android.material.button.MaterialButton android:id="@+id/subWheelClearButton"
+            style="@style/Widget.Material3.Button.TextButton" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:text="@string/gesture_add_action_sub_wheel_clear" />
+        </LinearLayout>
+      </LinearLayout>
     </LinearLayout>
   </androidx.core.widget.NestedScrollView>
   <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"

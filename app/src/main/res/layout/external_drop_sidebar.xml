@@ -27,6 +27,16 @@
                 android:orientation="vertical"
                 android:padding="6dp">
 
+                <TextView
+                    android:id="@+id/usageGuide"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="6dp"
+                    android:paddingHorizontal="2dp"
+                    android:text="@string/guide_external_drop_usage"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/externalDropEnginesCard"
                     android:layout_width="match_parent"

@@ -40,6 +40,11 @@ object CurrentPackageProvider {
         tracker.clear()
     }
 
+    /** Root-based foreground tracking; does not inspect AccessibilityNodeInfo or window trees. */
+    fun onRootPackageChanged(packageName: String) {
+        tracker.onRootPackageChanged(packageName)
+    }
+
     fun onAccessibilityEvent(event: AccessibilityEvent) {
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOWS_CHANGED -> tracker.onWindowsChanged()

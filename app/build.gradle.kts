@@ -133,7 +133,7 @@ dependencies {
     implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
 
-    // Privileged platform access.
+    // Privileged platform access (root execution is the primary backend).
     implementation(libs.bundles.shizuku)
     implementation(libs.hiddenapibypass)
 

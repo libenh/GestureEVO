@@ -1,15 +1,10 @@
 package io.github.lumiagg.gestureevo.settings
 
-import android.accessibilityservice.AccessibilityServiceInfo
-import android.content.Context
-import android.content.Context.ACCESSIBILITY_SERVICE
 import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
 import android.transition.Fade
 import android.util.Log
 import android.view.View
-import android.view.accessibility.AccessibilityManager
 import androidx.core.app.ActivityOptionsCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -27,6 +22,7 @@ import io.github.lumiagg.gestureevo.gesture.config.FreeTriggerDataManager
 import io.github.lumiagg.gestureevo.gesture.config.GestureActionDataManager
 import io.github.lumiagg.gestureevo.settings.ui.showAboutBottomSheet
 import io.github.lumiagg.gestureevo.utils.DynamicColorUtils
+import io.github.lumiagg.gestureevo.utils.root.RootShell
 import io.github.lumiagg.gestureevo.utils.PreferenceDataStoreAdapter
 import io.github.lumiagg.gestureevo.utils.readKey
 import io.github.lumiagg.gestureevo.utils.saveKey
@@ -252,20 +248,18 @@ class SettingsActivity : AppCompatActivity() {
             }
 
             preferenceService = findPreference<Preference>("preferenceService")?.apply {
-                updateAccessibilityServiceStatus(this)
+                updateRootStatus(this)
                 setOnPreferenceClickListener {
-                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                    intent.flags =
-                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    startActivity(intent)
-                    return@setOnPreferenceClickListener true
+                    // Calling su triggers the installed root manager's normal authorization prompt.
+                    updateRootStatus(this)
+                    true
                 }
             }
         }
 
         override fun onResume() {
             super.onResume()
-            preferenceService?.let { updateAccessibilityServiceStatus(it) }
+            preferenceService?.let { updateRootStatus(it) }
             handlePendingNavigation()
         }
 
@@ -301,58 +295,14 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
-        private fun updateAccessibilityServiceStatus(preference: Preference) {
-            lifecycleScope.launch(Dispatchers.IO) {
-                autoOpenAccessibilityService(requireContext())
-                val title = if (evoAccessibilityServiceIsEnable(requireContext())) {
-                    getString(R.string.settings_accessibility_running)
-                } else {
-                    getString(R.string.settings_accessibility_off)
-                }
-                withContext(Dispatchers.Main) { preference.title = title }
+        private fun updateRootStatus(preference: Preference) {
+            lifecycleScope.launch {
+                val granted = RootShell.isAvailable()
+                preference.title = getString(
+                    if (granted) R.string.settings_root_running else R.string.settings_root_off
+                )
+                preference.summary = getString(R.string.settings_root_summary)
             }
         }
     }
 }
-
-fun evoAccessibilityServiceIsEnable(context: Context): Boolean {
-    val accessibilityManager =
-        (context.getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager)
-    val accessibilityServices = accessibilityManager.getEnabledAccessibilityServiceList(
-        AccessibilityServiceInfo.FEEDBACK_ALL_MASK
-    )
-    for (info in accessibilityServices) {
-        if (info.id.contains(context.packageName)) {
-            return true
-        }
-    }
-    return false
-}
-
-suspend fun autoOpenAccessibilityService(context: Context): Boolean =
-    withContext(Dispatchers.Default) {
-        if (evoAccessibilityServiceIsEnable(context)) {
-            return@withContext true
-        } else {
-            try {
-                Log.d("SettingsActivity", "autoOpenAccessibilityService: ")
-                val enabledService = Settings.Secure.getString(
-                    context.contentResolver,
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-                )
-                Settings.Secure.putString(
-                    context.contentResolver,
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-                    "$enabledService:${context.packageName}/${context.packageName}.gesture.GestureService"
-                )
-                Settings.Secure.putInt(
-                    context.contentResolver,
-                    Settings.Secure.ACCESSIBILITY_ENABLED, 1
-                )
-                delay(300)
-                return@withContext true
-            } catch (e: SecurityException) {
-                return@withContext false
-            }
-        }
-    }

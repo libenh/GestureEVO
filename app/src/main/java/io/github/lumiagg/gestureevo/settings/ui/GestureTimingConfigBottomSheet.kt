@@ -49,6 +49,28 @@ class GestureTimingConfigBottomSheet(
         binding.swipeThresholdSlider.setLabelFormatter(distanceLabelFormatter)
         binding.backThresholdSlider.setLabelFormatter(distanceLabelFormatter)
 
+        binding.presetResponsive.setOnClickListener {
+            applyPreset(
+                longPress = 350,
+                doubleTap = 220,
+                pause = 160,
+                swipeThreshold = 35,
+                backThreshold = 25
+            )
+            binding.timingPresetGroup.clearCheck()
+        }
+
+        binding.presetStable.setOnClickListener {
+            applyPreset(
+                longPress = 650,
+                doubleTap = 400,
+                pause = 300,
+                swipeThreshold = 65,
+                backThreshold = 45
+            )
+            binding.timingPresetGroup.clearCheck()
+        }
+
         binding.resetButton.setOnClickListener {
             resetToDefault()
         }
@@ -86,6 +108,20 @@ class GestureTimingConfigBottomSheet(
             (timingConfig.swipeThresholdDp.takeIf { it > 0 } ?: GestureTimingConfig.DEFAULT_SWIPE_THRESHOLD_DP).toFloat()
         binding.backThresholdSlider.value =
             (timingConfig.backThresholdDp.takeIf { it > 0 } ?: GestureTimingConfig.DEFAULT_BACK_THRESHOLD_DP).toFloat()
+    }
+
+    private fun applyPreset(
+        longPress: Int,
+        doubleTap: Int,
+        pause: Int,
+        swipeThreshold: Int,
+        backThreshold: Int
+    ) {
+        binding.longPressSlider.value = longPress.toFloat()
+        binding.doubleTapSlider.value = doubleTap.toFloat()
+        binding.pauseSlider.value = pause.toFloat()
+        binding.swipeThresholdSlider.value = swipeThreshold.toFloat()
+        binding.backThresholdSlider.value = backThreshold.toFloat()
     }
 
     private fun resetToDefault() {

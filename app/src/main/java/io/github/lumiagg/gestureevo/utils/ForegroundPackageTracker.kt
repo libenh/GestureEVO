@@ -18,6 +18,16 @@ internal class ForegroundPackageTracker(
     val currentPackage: StateFlow<String?> = current.asStateFlow()
     private var confirmationJob: Job? = null
 
+    /** Updates foreground state from the root dumpsys monitor without reading a UI tree. */
+    @Synchronized
+    fun onRootPackageChanged(packageName: String) {
+        if (packageName.isNotBlank()) {
+            confirmationJob?.cancel()
+            confirmationJob = null
+            current.value = packageName
+        }
+    }
+
     @Synchronized
     fun onWindowStateChanged(trustedPackage: String?) {
         // Activity events can arrive before the application window tree catches up.

@@ -6,6 +6,16 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
+    <TextView
+        android:id="@+id/usageGuide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:paddingHorizontal="4dp"
+        android:text="@string/guide_screen_content_usage"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
     <FrameLayout
         android:id="@+id/screenshot_preview_container"
         android:clipChildren="false"
