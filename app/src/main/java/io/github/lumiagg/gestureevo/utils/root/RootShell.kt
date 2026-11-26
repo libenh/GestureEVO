@@ -116,7 +116,7 @@ object RootShell {
         } catch (failure: Exception) {
             return RootCommandResult(-1, failure.message.orEmpty())
         }
-        val reader = Executors.newSingleThreadExecutor { task ->
+        val reader = Executors.newFixedThreadPool(2) { task ->
             Thread(task, "GestureEVO-root-output").apply { isDaemon = true }
         }
         val outputFuture = reader.submit<String> {
