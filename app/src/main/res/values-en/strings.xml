@@ -800,7 +800,7 @@
     <string name="edit_delete_confirm_cancel">Cancel</string>
     <string name="shortcut_added_by">Added by %1$s</string>
     <string name="shortcut_load_failed">Load failed: %1$s</string>
-    <string name="action_view_accessibility_required">Please enable accessibility service before configuring</string>
+    <string name="action_view_accessibility_required">Please grant GestureEVO root access before configuring</string>
     <string name="action_view_item_menu_edit">Edit</string>
     <string name="action_view_item_menu_delete">Delete</string>
     <string name="action_view_item_menu_submenu">Secondary wheel</string>
