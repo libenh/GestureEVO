@@ -16,8 +16,8 @@ android {
         applicationId = "io.github.lumiagg.gestureevo"
         minSdk = 24
         targetSdk = 36
-        versionCode = 261125001
-        versionName = "2.2-1125001"
+        versionCode = 261126001
+        versionName = "2.2-1126001"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -79,6 +79,21 @@ android {
         // Store the larger AAR libraries compressed in the downloadable APK.
         jniLibs.useLegacyPackaging = true
     }
+}
+
+
+val validateReleaseSigning by tasks.registering {
+    group = "verification"
+    description = "Prevents release APKs from being assembled without the configured release keystore."
+    doLast {
+        check(releaseSigning != null) {
+            "Release signing is not configured. Set GESTUREEVO_KEYSTORE_FILE, GESTUREEVO_KEYSTORE_PASSWORD, GESTUREEVO_KEY_ALIAS and GESTUREEVO_KEY_PASSWORD."
+        }
+    }
+}
+
+tasks.named("assembleRelease") {
+    dependsOn(validateReleaseSigning)
 }
 
 val prepareProjectDocuments by tasks.registering(Copy::class) {
