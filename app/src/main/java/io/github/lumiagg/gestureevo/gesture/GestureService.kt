@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -68,6 +69,7 @@ class GestureService : AccessibilityService(), CoroutineScope {
     private var externalDropFloating: ExternalDropFloating? = null
     private var externalDropSettingsJob: Job? = null
     private var globalPressDragSource: GlobalPressDragSource? = null
+    private var foregroundMonitorJob: Job? = null
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         CurrentPackageProvider.onAccessibilityEvent(event)
@@ -90,6 +92,7 @@ class GestureService : AccessibilityService(), CoroutineScope {
         AccessibilityBlacklist.start(this)
         CurrentPackageProvider.setService(this)
         initReceiver()
+        startRootForegroundMonitor()
         launch(Dispatchers.Main) {
             delay(1000)
             gestureManager = GestureManager(this@GestureService, this)
@@ -108,6 +111,32 @@ class GestureService : AccessibilityService(), CoroutineScope {
                 this@GestureService
             )
             RecentAppsRecorder.initLauncherPackagesInDB(applicationContext)
+        }
+    }
+
+    /**
+     * Polls ActivityManager through su and publishes foreground app changes.
+     * A single root check is performed before the loop to avoid repeated authorization prompts.
+     */
+    private fun startRootForegroundMonitor() {
+        foregroundMonitorJob?.cancel()
+        foregroundMonitorJob = launch(Dispatchers.IO) {
+            if (!RootShell.isAvailable()) {
+                Log.w(TAG, "Root foreground monitor not started: root permission unavailable")
+                return@launch
+            }
+            var previousPackage: String? = null
+            while (isActive) {
+                val packageName = runCatching { RootShell.foregroundPackage() }.getOrNull()
+                if (!packageName.isNullOrBlank() && packageName != previousPackage) {
+                    previousPackage = packageName
+                    CurrentPackageProvider.onRootPackageChanged(packageName)
+                    withContext(Dispatchers.Main.immediate) {
+                        gestureManager?.onForegroundPackageChanged(packageName)
+                    }
+                }
+                delay(1_000L)
+            }
         }
     }
 
@@ -189,6 +218,8 @@ class GestureService : AccessibilityService(), CoroutineScope {
         globalPressDragSource = null
         externalDropSettingsJob?.cancel()
         externalDropSettingsJob = null
+        foregroundMonitorJob?.cancel()
+        foregroundMonitorJob = null
         externalDropFloating?.destroy()
         externalDropFloating = null
         super.onDestroy()
