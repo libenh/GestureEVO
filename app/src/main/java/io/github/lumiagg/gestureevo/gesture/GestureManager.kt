@@ -54,6 +54,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * 手势功能总协调器：将触发区产生的手势转换为轮盘、快捷动作和各类悬浮功能事件。
+ *
+ * 同时管理窗口变化、前台应用切换、交互模式以及各悬浮组件的生命周期；
+ * 具体手势识别和动作配置分别由触发视图与配置层负责。
+ */
 class GestureManager(
     private val gestureService: GestureService, private val lifecycleScope: CoroutineScope
 ) {
@@ -557,6 +563,10 @@ class GestureManager(
             }
         }
 
+    /**
+     * 屏幕方向或系统主题变化时，刷新依赖屏幕尺寸和主题上下文的悬浮组件。
+     * 方向变化会重建触发区域，避免旧坐标继续参与手势判定。
+     */
     fun onConfigurationChanged(newConfig: Configuration) {
         val diff = lastConfig.diff(newConfig)
         val nightChanged =
@@ -587,6 +597,9 @@ class GestureManager(
         }
     }
 
+    /**
+     * 将最新主题应用到当前已创建的悬浮组件，不强制初始化尚未使用的组件。
+     */
     fun refreshOverlayThemes() {
         if (guidePreviewFloatingLazy.isInitialized()) guidePreviewFloating.refresh()
         if (actionViewFloatingLazy.isInitialized()) actionViewFloating.refreshTheme()
@@ -599,6 +612,10 @@ class GestureManager(
         PictureFloating.refreshAllThemes()
     }
 
+    /**
+     * 根据系统窗口事件更新文本选择、指针链接和自动化搜索等依赖当前页面的功能。
+     * 该入口目前由系统事件服务调用，后续替换事件来源时应保持这里的业务语义。
+     */
     fun onWindowStateChanged(event: AccessibilityEvent) {
         if (inspireFloatingLazy.isInitialized()) inspireFloating.onWindowEvent(event)
         if (pointerFloatingLazy.isInitialized()) pointerFloating.onWindowEvent(event)
@@ -633,6 +650,9 @@ class GestureManager(
         if (linkRadarFloatingLazy.isInitialized()) linkRadarFloating.stopSession()
     }
 
+    /**
+     * 暂停当前会话中的主要悬浮交互，包括触发区、轮盘、指针、内容选择和链接雷达。
+     */
     fun inactiveAllFloating() = lifecycleScope.launch(Dispatchers.Main) {
         Log.d(TAG, "inactiveAllFloating: ")
         freeTriggerFloating.disableAllTrigger()
@@ -644,6 +664,9 @@ class GestureManager(
         if (linkRadarFloatingLazy.isInitialized()) linkRadarFloating.stopSession()
     }
 
+    /**
+     * 恢复常规悬浮交互，并重新启用通知入口与手势触发区。
+     */
     fun activeSomeFloating() = lifecycleScope.launch(Dispatchers.Main) {
         Log.d(TAG, "activeSomeFloating: ")
         if (notificationFloatingLazy.isInitialized()) notificationFloating.enable = true
@@ -662,6 +685,9 @@ class GestureManager(
         if (actionViewFloatingLazy.isInitialized()) actionViewFloating.setTouchEnabled(enabled)
     }
 
+    /**
+     * 切换全局交互模式，避免指针拖选或内容选择期间误触发普通手势反馈。
+     */
     fun setInteractionMode(mode: InteractionMode) {
         interactionMode = mode
         if (mode != InteractionMode.NORMAL && gestureFeedbackFloatingLazy.isInitialized()) {
@@ -669,6 +695,9 @@ class GestureManager(
         }
     }
 
+    /**
+     * 释放本协调器创建或持有的悬浮组件、链接捕获会话及临时交互状态。
+     */
     fun destroy() {
         pointerLinks.stop()
         interactionMode = InteractionMode.NORMAL
