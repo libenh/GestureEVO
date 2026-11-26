@@ -646,7 +646,9 @@ class GestureManager(
      * Refreshes per-app trigger visibility and invalidates screen-coordinate link snapshots.
      */
     fun onForegroundPackageChanged(packageName: String) {
-        freeTriggerFloating.checkTriggerPackage(packageName)
+        lifecycleScope.launch(Dispatchers.Main.immediate) {
+            freeTriggerFloating.checkTriggerPackage(packageName)
+        }
         if (pointerLinks.active) {
             pointerLinks.invalidate()
             if (linkRadarFloatingLazy.isInitialized()) linkRadarFloating.stopSession()
