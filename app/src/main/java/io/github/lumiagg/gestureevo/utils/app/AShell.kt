@@ -7,34 +7,29 @@ import android.content.Context
 import android.system.Os
 import io.github.lumiagg.gestureevo.R
 import io.github.lumiagg.gestureevo.utils.ToastHelper
-import io.github.lumiagg.gestureevo.utils.runProcess
+import io.github.lumiagg.gestureevo.utils.root.RootShell
 import java.io.IOException
 
 object AShell {
+    /** Executes privileged commands through root only; Shizuku is not used as a fallback. */
     suspend fun doCmd(context: Context, command: String): Pair<Boolean, String> {
-        val rootResult = doCmdWithRoot(command)
-        return if (!rootResult.first && AShizuku.checkPermission(context)) {
-            AShizuku.doCmdWithShizuku(command)
-        } else rootResult
+        val result = RootShell.execute(command)
+        AppLogger.event(
+            LogModule.SHIZUKU, "command_returned",
+            if (result.isSuccess) LogLevel.DEBUG else LogLevel.WARN,
+            fields = mapOf("method" to "root", "exitCode" to result.exitCode)
+        )
+        return result.isSuccess to result.output
     }
 
     fun doCmdWithRoot(command: String): Pair<Boolean, String> {
-        return try {
-            runProcess(listOf("su", "-c", command)).also { result ->
-                AppLogger.event(
-                    LogModule.SHIZUKU, "command_returned",
-                    if (result.isSuccess) LogLevel.DEBUG else LogLevel.WARN,
-                    fields = mapOf("method" to "root", "exitCode" to result.exitCode))
-            }.asCommandResult()
-        } catch (e: InterruptedException) {
-            Thread.currentThread().interrupt()
-            false to e.message.orEmpty()
-        } catch (e: IOException) {
-            AppLogger.event(
-                LogModule.SHIZUKU, "root_unavailable",
-                LogLevel.WARN, error = e)
-            false to e.message.orEmpty()
-        }
+        val result = RootShell.executeBlocking(command)
+        AppLogger.event(
+            LogModule.SHIZUKU, "command_returned",
+            if (result.isSuccess) LogLevel.DEBUG else LogLevel.WARN,
+            fields = mapOf("method" to "root", "exitCode" to result.exitCode)
+        )
+        return result.isSuccess to result.output
     }
 
     fun setAppEnabledSettings(packageName: String, enable: Boolean, context: Context): Boolean {
