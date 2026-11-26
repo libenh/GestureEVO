@@ -347,7 +347,9 @@ class GestureManager(
             CurrentPackageProvider.currentPackageFlow.collect { foregroundPackage ->
                 val packageName = foregroundPackage ?: return@collect
                 Log.d(TAG, "Foreground application changed")
-                freeTriggerFloating.checkTriggerPackage(packageName)
+                lifecycleScope.launch(Dispatchers.Main.immediate) {
+            freeTriggerFloating.checkTriggerPackage(packageName)
+        }
                 if (packageName == context.packageName) return@collect
                 val model = getAPPDao().findByPkg(pkg = packageName) ?: return@collect
                 RecentAppsRecorder.recordApp(context, model)
