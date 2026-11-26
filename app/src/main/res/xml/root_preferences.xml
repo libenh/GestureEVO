@@ -11,8 +11,8 @@
             android:icon="@drawable/icon_service"
             android:key="preferenceService"
             android:layout="@layout/custom_preference_widget_layout"
-            app:title="@string/settings_accessibility_off"
-            app:summary="@string/settings_service_summary" />
+            app:title="@string/settings_root_off"
+            app:summary="@string/settings_root_summary" />
     </PreferenceCategory>
     <PreferenceCategory android:layout="@layout/settings_home_category" app:title="@string/settings_group_gestures" app:iconSpaceReserved="false">
         <Preference
