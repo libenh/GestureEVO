@@ -88,7 +88,7 @@ jobs:
           done
           export GESTUREEVO_KEYSTORE_FILE="$RUNNER_TEMP/gestureevo-release.jks"
           trap 'rm -f -- "$GESTUREEVO_KEYSTORE_FILE"' EXIT
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$GESTUREEVO_KEYSTORE_FILE"
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 --decode > "$GESTUREEVO_KEYSTORE_FILE"
           chmod 600 "$GESTUREEVO_KEYSTORE_FILE"
           # Bound compiler memory and compile the two variants sequentially.
           sh gradlew :app:testDebugUnitTest --no-daemon --no-configuration-cache --max-workers=2 -Pkotlin.daemon.jvmargs=-Xmx4096m
