@@ -56,6 +56,12 @@ data class TriggerViewGroup(
     }
 }
 
+/**
+ * 手势触发区管理器。
+ *
+ * 按用户保存的触发配置创建屏幕边缘触发视图，支持镜像触发区、按应用过滤、
+ * 屏幕方向适配、临时暂停和配置预览；触发后的动作由回调交给手势协调器执行。
+ */
 class FreeTriggerFloating(
     private val context: GestureService,
     private val triggerTouchProxyCallBack: TriggerCallBack
@@ -112,6 +118,10 @@ class FreeTriggerFloating(
         }
     }
 
+    /**
+     * 重新读取触发配置，并按配置增删或更新屏幕上的触发视图。
+     * 配置被禁用或删除时，同时取消对应冷却任务与临时暂停通知。
+     */
     suspend fun reloadTriggers() = withContext(Dispatchers.Main) {
         // Read all trigger configurations
         val newConfigs = migrateActionMap(context, FreeTriggerDataManager.readTriggers(context))
@@ -384,6 +394,9 @@ class FreeTriggerFloating(
         }
     }
 
+    /**
+     * 前台应用切换后重新判断每个触发区是否允许显示，应用过滤规则由配置决定。
+     */
     suspend fun checkTriggerPackage(targetPkg: String) = withContext(Dispatchers.Main) {
         lastPackageName = targetPkg
         refreshTriggerVisibility()
@@ -438,12 +451,18 @@ class FreeTriggerFloating(
             }
         }
 
+    /**
+     * 恢复所有触发区的常规可用状态，并按当前前台应用与屏幕方向刷新显示。
+     */
     suspend fun resetAllTriggerEnable() =
         withContext(Dispatchers.Main) {
             Log.d(TAG, "resetAllTriggerEnable: ")
             refreshTriggerVisibility()
         }
 
+    /**
+     * 临时关闭全部手势触发区；用于系统操作或其他交互模式需要独占触摸时。
+     */
     suspend fun disableAllTrigger() =
         withContext(Dispatchers.Main) {
             realTriggerIsEnable = false
@@ -517,6 +536,9 @@ class FreeTriggerFloating(
         }
     }
 
+    /**
+     * 判断指定应用是否命中该触发区的应用范围规则。
+     */
     fun isPackageAllowedForTrigger(trigger: FreeTriggerConfig, targetPkg: String): Boolean {
         return isPackageAllowed(trigger, targetPkg)
     }
@@ -525,6 +547,9 @@ class FreeTriggerFloating(
         return trigger.isPackageAllowed(targetPkg, context.packageName)
     }
 
+    /**
+     * 移除全部触发视图并取消冷却、暂停等关联任务，结束本管理器的生命周期。
+     */
     fun destroy() {
         actionCooldownJobs.values.forEach(Job::cancel)
         actionCooldownJobs.clear()
