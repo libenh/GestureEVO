@@ -55,6 +55,12 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.resume
 
 
+/**
+ * 手势运行时服务，负责连接系统事件入口，并托管手势协调器与全局拖拽会话。
+ *
+ * 当前实现还提供系统截图和模拟触摸能力；这些能力与无障碍事件监听并非同一职责，
+ * 在迁移到 LSPosed／Shizuku 后应分别替换，不能随服务声明一起直接删除。
+ */
 class GestureService : AccessibilityService(), CoroutineScope {
     lateinit var job: Job
 
@@ -180,6 +186,9 @@ class GestureService : AccessibilityService(), CoroutineScope {
         }
     }
 
+    /**
+     * 关闭拖拽会话、悬浮面板、系统事件接收器和协程任务，避免服务退出后残留窗口。
+     */
     override fun onDestroy() {
         AppLogger.event(
             LogModule.SERVICE, "accessibility_destroyed",
@@ -223,6 +232,10 @@ class GestureService : AccessibilityService(), CoroutineScope {
     private val takeCaptureService: ExecutorService =
         ThreadPoolExecutor(1, 2, 30, TimeUnit.SECONDS, ArrayBlockingQueue(10))
 
+    /**
+     * 请求系统截取当前显示画面，成功时返回独立的可读 Bitmap。
+     * 仅支持 Android 11 及以上；调用有超时，失败或系统拒绝时返回 null。
+     */
     suspend fun takeScreenshot(): Bitmap? =
         withTimeoutOrNull(3500L) {
             suspendCancellableCoroutine { continuation ->
@@ -279,6 +292,9 @@ class GestureService : AccessibilityService(), CoroutineScope {
     suspend fun takeManagedScreenshot(): ManagedBitmap? =
         takeScreenshot()?.let(ManagedBitmap::from)
 
+    /**
+     * 通过系统手势注入执行单击或双击，并等待系统报告完成或取消。
+     */
     suspend fun performClickAsync(
         x: Float,
         y: Float,
@@ -305,6 +321,9 @@ class GestureService : AccessibilityService(), CoroutineScope {
         return dispatchGestureAsync(gestureBuilder.build())
     }
 
+    /**
+     * 注入滑动手势，可选择减速轨迹及到达终点后的短暂停留。
+     */
     suspend fun performSwipeAsync(
         startX: Float,
         startY: Float,
