@@ -8,14 +8,13 @@ import android.system.Os
 import io.github.lumiagg.gestureevo.R
 import io.github.lumiagg.gestureevo.utils.ToastHelper
 import io.github.lumiagg.gestureevo.utils.root.RootShell
-import java.io.IOException
 
 object AShell {
     /** Executes privileged commands through root only; Shizuku is not used as a fallback. */
     suspend fun doCmd(context: Context, command: String): Pair<Boolean, String> {
         val result = RootShell.execute(command)
         AppLogger.event(
-            LogModule.SHIZUKU, "command_returned",
+            LogModule.ROOT, "command_returned",
             if (result.isSuccess) LogLevel.DEBUG else LogLevel.WARN,
             fields = mapOf("method" to "root", "exitCode" to result.exitCode)
         )
