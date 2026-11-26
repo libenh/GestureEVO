@@ -1389,6 +1389,10 @@
     <string name="gesture_add_action_sub_wheel_linked">Sub-wheel: linked</string>
     <string name="gesture_add_action_sub_wheel_choose">Choose a wheel group</string>
     <string name="gesture_add_action_sub_wheel_clear">Remove link</string>
+    <string name="gesture_add_action_sub_wheel_unset">No wheel group linked. Choose a group to open its submenu when this action runs.</string>
+    <string name="gesture_add_action_sub_wheel_loading">Loading the linked wheel group…</string>
+    <string name="gesture_add_action_sub_wheel_current">Currently linked: %1$s</string>
+    <string name="gesture_add_action_sub_wheel_missing">The linked wheel group no longer exists. Choose another group or remove the link.</string>
     <string name="gesture_add_action_save_failed">Could not save the action. Please try again.</string>
     <string name="action_editor_title">Action settings</string>
     <string name="action_editor_edit">Edit action</string>
