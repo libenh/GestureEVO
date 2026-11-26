@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.androidx.room)
 }
 
+val hasReleaseSigningEnvironment = listOf(
+    "GESTUREEVO_KEYSTORE_FILE", "GESTUREEVO_KEYSTORE_PASSWORD",
+    "GESTUREEVO_KEY_ALIAS", "GESTUREEVO_KEY_PASSWORD",
+).all { !providers.environmentVariable(it).orNull.isNullOrEmpty() }
+
 android {
     namespace = "io.github.lumiagg.gestureevo"
     compileSdk = 36
@@ -86,7 +91,7 @@ val validateReleaseSigning by tasks.registering {
     group = "verification"
     description = "Prevents release APKs from being assembled without the configured release keystore."
     doLast {
-        check(releaseSigning != null) {
+        check(hasReleaseSigningEnvironment) {
             "Release signing is not configured. Set GESTUREEVO_KEYSTORE_FILE, GESTUREEVO_KEYSTORE_PASSWORD, GESTUREEVO_KEY_ALIAS and GESTUREEVO_KEY_PASSWORD."
         }
     }
