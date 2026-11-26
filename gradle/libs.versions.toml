@@ -12,6 +12,7 @@ ahocorasick = "0.6.3"
 zxing = "3.5.3"
 sardine = "0.9"
 shizuku = "13.1.5"
+libxposed-api = "102.0.0"
 appiconloader = "1.5.0"
 hiddenapibypass = "6.1"
 brv = "1.6.1"
@@ -40,6 +41,7 @@ zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 sardine-android = { module = "com.github.thegrizzlylabs:sardine-android", version.ref = "sardine" }
 shizuku-api = { module = "dev.rikka.shizuku:api", version.ref = "shizuku" }
 shizuku-provider = { module = "dev.rikka.shizuku:provider", version.ref = "shizuku" }
+libxposed-api = { module = "io.github.libxposed:api", version.ref = "libxposed-api" }
 appiconloader = { module = "me.zhanghai.android.appiconloader:appiconloader", version.ref = "appiconloader" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
