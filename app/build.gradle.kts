@@ -97,7 +97,7 @@ val validateReleaseSigning by tasks.registering {
     }
 }
 
-tasks.named("assembleRelease") {
+tasks.matching { it.name == "packageRelease" }.configureEach {
     dependsOn(validateReleaseSigning)
 }
 
