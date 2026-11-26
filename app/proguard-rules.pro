@@ -31,9 +31,3 @@
 -keep class ai.onnxruntime.** { *; }
 -keep class org.opencv.** { *; }
 
-# Keep the modern LSPosed entry and rewrite its registration file if R8 renames it.
--dontwarn io.github.libxposed.annotation.**
--adaptresourcefilecontents META-INF/xposed/java_init.list
--keep,allowoptimization,allowobfuscation public class * extends io.github.libxposed.api.XposedModule {
-    public <init>();
-}
