@@ -1,10 +1,10 @@
 <resources>
-    <string name="external_drop_pool">加入 Pin 池</string>
+    <string name="external_drop_pool">加入暂存区</string>
     <string name="external_drop_previous_page">悬停翻到上一页</string>
     <string name="external_drop_next_page">悬停翻到下一页</string>
-    <string name="external_drop_pin">Pin 图</string>
-    <string name="external_drop_tokenize">分词</string>
-    <string name="external_drop_added">已加入 Pin 池</string>
+    <string name="external_drop_pin">固定内容</string>
+    <string name="external_drop_tokenize">文字拆分</string>
+    <string name="external_drop_added">已加入暂存区</string>
     <string name="external_drop_empty">没有可接收的文字或图片</string>
     <string name="external_drop_failed">接收失败，无法读取拖放内容</string>
     <string name="app_name">GestureEVO</string>
@@ -166,8 +166,8 @@
     <string name="appearance_settings_keyboard_description">调整键盘界面的背景模糊和卡片外观</string>
     <string name="appearance_settings_keyboard_background_blur">背景模糊(限制系统)</string>
     <string name="appearance_settings_keyboard_card_background_blur">卡片背景模糊</string>
-    <string name="appearance_settings_pin_pool_title">Pin 池设置</string>
-    <string name="appearance_settings_pin_pool_description">调整 Pin 池界面的背景模糊和卡片外观</string>
+    <string name="appearance_settings_pin_pool_title">暂存区设置</string>
+    <string name="appearance_settings_pin_pool_description">调整暂存区界面的背景模糊和卡片外观</string>
     <string name="appearance_settings_pin_pool_background_blur">背景模糊(限制系统)</string>
     <string name="appearance_settings_pin_pool_card_background_blur">卡片背景模糊</string>
     <string name="appearance_settings_screen_content_title">屏幕内容设置</string>
@@ -487,7 +487,7 @@
     </plurals>
     <string name="inspire_settings_screen_content_title">屏幕内容设置</string>
     <string name="inspire_settings_screen_content_description">管理屏幕内容识别、复制和截图相关选项</string>
-    <string name="inspire_settings_ocr_priority">优先使用OCR识别</string>
+    <string name="inspire_settings_ocr_priority">优先使用图片文字识别</string>
     <string name="inspire_settings_ocr_priority_desc">选择优先使用的文本获取方式，无障碍还是OCR</string>
     <string name="inspire_settings_double_check">框选后二次确认</string>
     <string name="inspire_settings_double_check_desc">开启后先预览框选区域，确认后再进入分词页面</string>
@@ -518,8 +518,8 @@
     <string name="inspire_settings_external_drop_engines">拖放时显示搜索引擎</string>
     <string name="inspire_settings_external_drop_engines_desc">在外部拖放悬浮窗中，根据内容类型显示已配置的搜索引擎</string>
     <string name="inspire_settings_default_share_behavior_desc">选择分享到分词或Pin池的默认行为</string>
-    <string name="inspire_settings_share_to_tokenization">分享到分词</string>
-    <string name="inspire_settings_share_to_pinpool">分享到Pin池</string>
+    <string name="inspire_settings_share_to_tokenization">分享到文字拆分</string>
+    <string name="inspire_settings_share_to_pinpool">分享到暂存区</string>
     <string name="inspire_settings_show_engine">显示搜索引擎</string>
     <string name="inspire_settings_show_engine_desc">在分词页面显示搜索引擎图标</string>
     <string name="inspire_settings_default_image_text_overlay">默认进入图文选择</string>
@@ -541,7 +541,7 @@
     <string name="inspire_settings_default_share_image_app_title">默认图片分享应用</string>
     <string name="inspire_settings_default_link_open_title">默认链接打开方式</string>
     <string name="inspire_settings_default_link_open_desc">为指定网站设置固定打开应用</string>
-    <string name="inspire_settings_link_radar_title">链接雷达</string>
+    <string name="inspire_settings_link_radar_title">屏幕链接识别</string>
     <string name="inspire_settings_link_radar_desc">指针靠近屏幕上的链接时高亮并显示打开目标，点击指针或悬停松手按规则跳转</string>
     <string name="link_radar_open_link">松手打开链接</string>
     <string name="link_radar_open_in">松手在 %1$s 中打开</string>
@@ -569,9 +569,9 @@
     <string name="inspire_settings_pointer_touch_area_offset_dp">%1$d dp</string>
     <string name="inspire_settings_pointer_drag_mode">悬停指针后进入框选模式</string>
     <string name="inspire_settings_pointer_drag_mode_desc">进入框选模式后直接释放可以选择当前界面元素\n拖动后可以截取屏幕</string>
-    <string name="inspire_settings_pin_pool_settings_title">Pin池设置</string>
+    <string name="inspire_settings_pin_pool_settings_title">暂存区设置</string>
     <string name="inspire_settings_pin_pool_settings_description">配置 Pin 池的显示方式与本地规则提取</string>
-    <string name="inspire_settings_pin_pool_mode_title">Pin池显示模式</string>
+    <string name="inspire_settings_pin_pool_mode_title">暂存区显示方式</string>
     <string name="inspire_settings_pin_pool_mode_desc">选择 Pin 池打开时以全屏、左侧边栏、右侧边栏，或跟随触发区显示</string>
     <string name="inspire_settings_pin_pool_mode_fullscreen">全屏</string>
     <string name="inspire_settings_pin_pool_mode_left_sidebar">左侧边栏</string>
