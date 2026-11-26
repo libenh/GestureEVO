@@ -95,7 +95,7 @@ jobs:
           import re
           from pathlib import Path
           raw = os.environ['KEYSTORE_BASE64']
-          compact = re.sub(r'\\s+', '', raw).replace('-', '+').replace('_', '/')
+          compact = re.sub(r'\s+', '', raw).replace('-', '+').replace('_', '/')
           invalid = re.sub(r'[A-Za-z0-9+/=]', '', compact)
           payload = compact.rstrip('=')
           if '=' in payload:
