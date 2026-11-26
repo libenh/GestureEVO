@@ -74,8 +74,17 @@ jobs:
           GESTUREEVO_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           GESTUREEVO_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          declare -A required_secrets=(
+            [KEYSTORE_BASE64]=ANDROID_KEYSTORE_BASE64
+            [GESTUREEVO_KEYSTORE_PASSWORD]=ANDROID_KEYSTORE_PASSWORD
+            [GESTUREEVO_KEY_ALIAS]=ANDROID_KEY_ALIAS
+            [GESTUREEVO_KEY_PASSWORD]=ANDROID_KEY_PASSWORD
+          )
           for name in KEYSTORE_BASE64 GESTUREEVO_KEYSTORE_PASSWORD GESTUREEVO_KEY_ALIAS GESTUREEVO_KEY_PASSWORD; do
-            if [[ -z "${!name}" ]]; then echo "::error::Missing signing secret: $name"; exit 1; fi
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing GitHub Actions secret: ${required_secrets[$name]}. Add it under Settings > Environments > release (or repository Actions secrets)."
+              exit 1
+            fi
           done
           export GESTUREEVO_KEYSTORE_FILE="$RUNNER_TEMP/gestureevo-release.jks"
           trap 'rm -f -- "$GESTUREEVO_KEYSTORE_FILE"' EXIT
