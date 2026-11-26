@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 /**
  * Root-only system control layer.
@@ -132,17 +133,19 @@ object RootShell {
                 output.toString()
             }
         }
+        // Use a Future timeout instead of Process.waitFor(timeout, unit), which is not
+        // available on every Android release supported by this app (minSdk 24).
+        val exitFuture = reader.submit<Int> { process.waitFor() }
         return try {
-            if (!process.waitFor(timeoutMs, TimeUnit.MILLISECONDS)) {
-                process.destroyForcibly()
-                RootCommandResult(-1, runCatching {
-                    outputFuture.get(500, TimeUnit.MILLISECONDS)
-                }.getOrDefault("Root command timed out"), timedOut = true)
-            } else {
-                RootCommandResult(process.exitValue(), outputFuture.get(1, TimeUnit.SECONDS))
-            }
+            val exitCode = exitFuture.get(timeoutMs, TimeUnit.MILLISECONDS)
+            RootCommandResult(exitCode, outputFuture.get(1, TimeUnit.SECONDS))
+        } catch (_: TimeoutException) {
+            process.destroy()
+            RootCommandResult(-1, runCatching {
+                outputFuture.get(500, TimeUnit.MILLISECONDS)
+            }.getOrDefault("Root command timed out"), timedOut = true)
         } catch (failure: Exception) {
-            process.destroyForcibly()
+            process.destroy()
             RootCommandResult(-1, failure.message.orEmpty())
         } finally {
             reader.shutdownNow()
