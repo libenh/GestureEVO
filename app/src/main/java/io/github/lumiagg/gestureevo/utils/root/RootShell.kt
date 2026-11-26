@@ -82,14 +82,12 @@ object RootShell {
      */
     suspend fun foregroundPackage(): String? = withContext(Dispatchers.IO) {
         val activity = executeBlocking("dumpsys activity activities", 5_000L)
-        val window = if (activity.isSuccess) null else
-            executeBlocking("dumpsys window windows", 5_000L)
-        val text = activity.output + "\n" + window?.output.orEmpty()
-        val patterns = listOf(
-            Regex("""(?:mResumedActivity|topResumedActivity)\\s*[:=]\\s*.*?\\bu\\d+\\s+([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)/"""),
-            Regex("""mCurrentFocus=Window\\{[^}]*\\bu\\d+\\s+([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)/"""),
-        )
-        patterns.firstNotNullOfOrNull { pattern -> pattern.find(text)?.groupValues?.getOrNull(1) }
+        val activityPattern = Regex("""(?:mResumedActivity|topResumedActivity)\s*[:=]\s*.*?\bu\d+\s+([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)/""")
+        activityPattern.find(activity.output)?.groupValues?.getOrNull(1)
+            ?: executeBlocking("dumpsys window windows", 5_000L).output.let { windowOutput ->
+                Regex("""mCurrentFocus=Window\{[^}]*\bu\d+\s+([A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+)/""")
+                    .find(windowOutput)?.groupValues?.getOrNull(1)
+            }
     }
 
     /** Shell-escapes one argument. Never interpolate arbitrary app or file names directly. */
