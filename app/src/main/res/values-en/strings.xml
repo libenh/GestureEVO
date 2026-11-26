@@ -657,6 +657,10 @@
     <string name="free_trigger_feedback_title">Gesture hint</string>
     <string name="free_trigger_feedback_desc">Shows gesture hint animations and action icons. Color and style are in Appearance</string>
     <string name="free_trigger_set_time">Threshold settings</string>
+    <string name="gesture_timing_presets_title">Quick presets</string>
+    <string name="gesture_timing_presets_desc">Start with a preset, then fine-tune the sliders below. Presets only fill values; changes take effect after saving.</string>
+    <string name="gesture_timing_preset_responsive">Responsive</string>
+    <string name="gesture_timing_preset_stable">Deliberate</string>
     <string name="gesture_timing_config_title">Gesture threshold settings</string>
     <string name="gesture_timing_config_reset">Reset</string>
     <string name="gesture_timing_config_save">Save</string>
