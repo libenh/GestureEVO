@@ -117,9 +117,16 @@ jobs:
           print(f'Keystore decoded successfully: {len(decoded)} bytes.')
           PY
           chmod 600 "$GESTUREEVO_KEYSTORE_FILE"
-          # Validate the decoded keystore before starting the Android build.
-          if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" -alias "$GESTUREEVO_KEY_ALIAS" >/dev/null 2>&1; then
-            echo "::error::Decoded keystore is invalid, incomplete, or does not match the configured password/alias. Re-copy the complete ANDROID_KEYSTORE_BASE64 value from ANDROID_KEYSTORE_BASE64.txt."
+          # Validate the keystore and alias separately so failures are diagnosable.
+          KEYTOOL_LOG="$RUNNER_TEMP/gestureevo-keytool.log"
+          if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" >/dev/null 2>"$KEYTOOL_LOG"; then
+            echo "::error::The decoded file is not a readable keystore with the configured store password. Check that ANDROID_KEYSTORE_BASE64 contains the complete encoded .jks file and that ANDROID_KEYSTORE_PASSWORD matches it."
+            sed -E 's/(password|storepass)[^.]*/\\1 [redacted]/Ig' "$KEYTOOL_LOG" | tail -n 3
+            exit 1
+          fi
+          if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" -alias "$GESTUREEVO_KEY_ALIAS" >/dev/null 2>"$KEYTOOL_LOG"; then
+            echo "::error::The keystore opened successfully, but ANDROID_KEY_ALIAS was not found. Check the configured alias; it must match the alias inside the keystore."
+            tail -n 3 "$KEYTOOL_LOG"
             exit 1
           fi
           # Bound compiler memory and compile the two variants sequentially.
