@@ -88,8 +88,34 @@ jobs:
           done
           export GESTUREEVO_KEYSTORE_FILE="$RUNNER_TEMP/gestureevo-release.jks"
           trap 'rm -f -- "$GESTUREEVO_KEYSTORE_FILE"' EXIT
-          # Accept standard or URL-safe Base64 and ignore copy/paste formatting characters.
-          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | tr '_-' '/+' | base64 --decode --ignore-garbage > "$GESTUREEVO_KEYSTORE_FILE"
+          # Normalize Base64 safely, restore omitted padding, and report metadata only.
+          python - <<'PY'
+          import base64
+          import os
+          import re
+          from pathlib import Path
+          raw = os.environ['KEYSTORE_BASE64']
+          compact = re.sub(r'\\s+', '', raw).replace('-', '+').replace('_', '/')
+          invalid = re.sub(r'[A-Za-z0-9+/=]', '', compact)
+          payload = compact.rstrip('=')
+          if '=' in payload:
+              raise SystemExit('::error::Keystore Base64 has padding in the middle; copy the complete file contents, without labels.')
+          remainder = len(payload) % 4
+          print(f'Keystore Base64 diagnostics: chars={len(compact)}, invalid_chars={len(invalid)}, length_mod4={remainder}, trailing_padding={len(compact)-len(payload)}')
+          if invalid:
+              raise SystemExit('::error::Keystore Base64 contains non-Base64 characters; copy only the contents of ANDROID_KEYSTORE_BASE64.txt.')
+          if remainder == 1:
+              raise SystemExit('::error::Keystore Base64 is truncated or corrupted (length modulo 4 is 1). Recreate the secret from the original file.')
+          encoded = payload + ('=' * ((4 - remainder) % 4))
+          try:
+              decoded = base64.b64decode(encoded, validate=True)
+          except Exception:
+              raise SystemExit('::error::Keystore Base64 could not be decoded; the secret is incomplete or corrupted.')
+          if not decoded:
+              raise SystemExit('::error::Decoded keystore is empty.')
+          Path(os.environ['GESTUREEVO_KEYSTORE_FILE']).write_bytes(decoded)
+          print(f'Keystore decoded successfully: {len(decoded)} bytes.')
+          PY
           chmod 600 "$GESTUREEVO_KEYSTORE_FILE"
           # Validate the decoded keystore before starting the Android build.
           if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" -alias "$GESTUREEVO_KEY_ALIAS" >/dev/null 2>&1; then
