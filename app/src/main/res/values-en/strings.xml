@@ -3,7 +3,7 @@
     <string name="external_drop_pool">Add to Staging</string>
     <string name="external_drop_previous_page">Hover for previous page</string>
     <string name="external_drop_next_page">Hover for next page</string>
-    <string name="external_drop_pin">Pin</string>
+    <string name="external_drop_pin">Floating pin</string>
     <string name="external_drop_tokenize">Split text</string>
     <string name="external_drop_added">Added to Staging</string>
     <string name="external_drop_empty">No text or images to receive</string>
