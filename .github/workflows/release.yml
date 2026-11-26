@@ -117,8 +117,8 @@ jobs:
               if tagged_commit != head:
                   raise SystemExit('Checked-out commit does not match pushed release tag.')
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
-              output.write(f'RELEASE_TAG={tag}\\n')
-              output.write(f'RELEASE_VERSION={version}\\n')
+              output.write(f'RELEASE_TAG={tag}\n')
+              output.write(f'RELEASE_VERSION={version}\n')
           print(f'Release version: {version}')
           print(f'Release tag: {tag}')
           PY
