@@ -69,6 +69,15 @@
           android:tint="?attr/colorOnSurfaceVariant" />
       </LinearLayout>
       <TextView
+        android:id="@+id/usageGuide"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:paddingHorizontal="4dp"
+        android:text="@string/guide_pin_pool_usage"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+      <TextView
         android:id="@+id/emptyView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
