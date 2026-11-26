@@ -291,9 +291,13 @@ class GestureService : AccessibilityService(), CoroutineScope {
         useDecelerationCurve: Boolean = true,
     ): Boolean {
         if (listOf(startX, startY, endX, endY).any { !it.isFinite() || it < 0f }) return false
-        if (holdDuration > 0L || useDecelerationCurve || duration !in 1L..10_000L) {
-            Log.w(TAG, "Requested swipe mode is not supported by the root input backend")
+        if (holdDuration > 0L || duration !in 1L..10_000L) {
+            Log.w(TAG, "Continuous post-swipe hold is not supported by the root input backend")
             return false
+        }
+        if (useDecelerationCurve) {
+            // The shell input service only exposes a linear swipe; preserve the gesture itself.
+            Log.d(TAG, "Using a linear root swipe; custom deceleration is unavailable")
         }
         return RootShell.swipe(
             startX.toInt(), startY.toInt(), endX.toInt(), endY.toInt(), duration
