@@ -4,6 +4,12 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      increment_version:
+        description: '递增 versionName 和 versionCode（仅维护版本时开启）'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -39,12 +45,45 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Validate repository and resolve release tag
+      - name: Validate repository and resolve release version
         env:
           GH_TOKEN: ${{ github.token }}
+          INCREMENT_VERSION: ${{ inputs.increment_version }}
         run: |
+          set -euo pipefail
           python tools/check_repository.py
           python -m unittest discover -s tools/tests
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "::error::Run release dispatch from main."; exit 1; }
+            if [[ "$INCREMENT_VERSION" == "true" ]]; then
+              python - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path('app/build.gradle.kts')
+          text = path.read_text(encoding='utf-8')
+          code = re.search(r'versionCode\\s*=\\s*(\\d+)', text)
+          name = re.search(r'versionName\\s*=\\s*"([^"]+)"', text)
+          if not code or not name:
+              raise SystemExit('Cannot parse versionCode/versionName')
+          match = re.fullmatch(r'(.*?)(\\d+)', name.group(1))
+          if not match:
+              raise SystemExit('versionName must end with a numeric revision to auto-increment')
+          next_code = int(code.group(1)) + 1
+          next_name = match.group(1) + str(int(match.group(2)) + 1)
+          text = re.sub(r'versionCode\\s*=\\s*\\d+', f'versionCode = {next_code}', text, count=1)
+          text = re.sub(r'versionName\\s*=\\s*"[^"]+"', f'versionName = "{next_name}"', text, count=1)
+          path.write_text(text, encoding='utf-8')
+          print(f'Incremented versionCode={next_code}, versionName={next_name}')
+          PY
+              git config user.name 'github-actions[bot]'
+              git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+              git add app/build.gradle.kts
+              git commit -m "chore(release): increment version"
+              git push origin HEAD:main
+            fi
+          fi
+
           python - <<'PY'
           import os
           import re
@@ -52,58 +91,36 @@ jobs:
           from pathlib import Path
 
           gradle = Path('app/build.gradle.kts').read_text(encoding='utf-8')
-          version_match = re.search(r'versionName\s*=\s*"([^"]+)"', gradle)
+          version_match = re.search(r'versionName\\s*=\\s*"([^"]+)"', gradle)
           if not version_match:
               raise SystemExit('Cannot read versionName from app/build.gradle.kts')
           version = version_match.group(1)
           tag = 'v' + version
           if not re.fullmatch(r'v[A-Za-z0-9][A-Za-z0-9.+_-]*', tag):
               raise SystemExit('Generated release tag is invalid')
-
           head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-          event = os.environ['GITHUB_EVENT_NAME']
-
-          if event == 'workflow_dispatch':
+          if os.environ['GITHUB_EVENT_NAME'] == 'workflow_dispatch':
               if os.environ['GITHUB_REF'] != 'refs/heads/main':
-                  raise SystemExit('Run release dispatch from main; release tags are generated automatically.')
+                  raise SystemExit('Run release dispatch from main.')
               remote = subprocess.run(
                   ['git', 'ls-remote', '--exit-code', '--tags', 'origin', f'refs/tags/{tag}'],
                   text=True, capture_output=True
               )
               if remote.returncode == 0:
-                  subprocess.run(['git', 'fetch', 'origin', f'refs/tags/{tag}:refs/tags/{tag}'], check=True)
-                  existing = subprocess.check_output(
-                      ['git', 'rev-list', '-n', '1', tag], text=True
-                  ).strip()
-                  if existing != head:
-                      raise SystemExit(
-                          f'Tag {tag} already exists on another commit. Bump versionName/versionCode; existing tags are never moved.'
-                      )
-              elif remote.returncode == 2:
-                  subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'], check=True)
-                  subprocess.run(
-                      ['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'],
-                      check=True
-                  )
-                  subprocess.run(['git', 'tag', '-a', tag, '-m', f'GestureEVO {version}'], check=True)
-                  subprocess.run(['git', 'push', 'origin', tag], check=True)
-              else:
-                  raise SystemExit('Unable to check remote tags; refusing to create a potentially duplicate tag.')
+                  raise SystemExit(f'Tag {tag} already exists; choose a fresh version.')
+              if remote.returncode != 2:
+                  raise SystemExit('Unable to check remote tags safely.')
           else:
-              pushed_tag = os.environ['GITHUB_REF_NAME']
-              if pushed_tag != tag:
-                  raise SystemExit(
-                      f'Tag/version mismatch: pushed {pushed_tag}, but app/build.gradle.kts declares {tag}.'
-                  )
+              if os.environ['GITHUB_REF_NAME'] != tag:
+                  raise SystemExit(f'Tag/version mismatch: pushed {os.environ["GITHUB_REF_NAME"]}, expected {tag}.')
               tagged_commit = subprocess.check_output(
                   ['git', 'rev-parse', f'refs/tags/{tag}^{{commit}}'], text=True
               ).strip()
               if tagged_commit != head:
-                  raise SystemExit('Checked-out commit does not match the pushed release tag.')
-
+                  raise SystemExit('Checked-out commit does not match pushed release tag.')
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
-              output.write(f'RELEASE_TAG={tag}\n')
-              output.write(f'RELEASE_VERSION={version}\n')
+              output.write(f'RELEASE_TAG={tag}\\n')
+              output.write(f'RELEASE_VERSION={version}\\n')
           print(f'Release version: {version}')
           print(f'Release tag: {tag}')
           PY
@@ -230,6 +247,22 @@ jobs:
               raise SystemExit('APK signing certificate does not match the published release identity')
           print('APK signature certificate matches the published release identity.')
           PY
+
+      - name: Create immutable release tag after successful build
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          current="$(git rev-parse HEAD)"
+          if git ls-remote --exit-code --tags origin "refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "::error::Tag ${RELEASE_TAG} already exists; refusing to move it."
+            exit 1
+          fi
+          git tag -a "$RELEASE_TAG" -m "GestureEVO $RELEASE_VERSION"
+          git push origin "$RELEASE_TAG"
 
       - name: Remove temporary signing material
         if: always()
