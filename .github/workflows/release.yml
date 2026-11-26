@@ -1,21 +1,21 @@
 name: Signed release
+
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Existing version tag, matching v<versionName>'
-        required: true
-        type: string
+
 permissions:
-  contents: read
+  contents: write
+
 concurrency:
-  group: release-${{ inputs.tag || github.ref_name }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
+
 defaults:
   run:
     shell: bash
+
 jobs:
   release:
     runs-on: ubuntu-24.04
@@ -23,22 +23,25 @@ jobs:
     environment: release
     permissions:
       contents: write
-    env:
-      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ github.ref }}
           fetch-depth: 0
-          persist-credentials: false
+          persist-credentials: true
+
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
         with:
           distribution: temurin
           java-version: '17'
+
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.11'
-      - name: Validate version tag and repository
+
+      - name: Validate repository and resolve release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python tools/check_repository.py
           python -m unittest discover -s tools/tests
@@ -47,27 +50,74 @@ jobs:
           import re
           import subprocess
           from pathlib import Path
-          tag = os.environ['RELEASE_TAG']
+
+          gradle = Path('app/build.gradle.kts').read_text(encoding='utf-8')
+          version_match = re.search(r'versionName\\s*=\\s*"([^"]+)"', gradle)
+          if not version_match:
+              raise SystemExit('Cannot read versionName from app/build.gradle.kts')
+          version = version_match.group(1)
+          tag = 'v' + version
           if not re.fullmatch(r'v[A-Za-z0-9][A-Za-z0-9.+_-]*', tag):
-              raise SystemExit('Invalid version tag')
-          commit = subprocess.check_output(['git', 'rev-parse', f'refs/tags/{tag}^{{commit}}'], text=True).strip()
+              raise SystemExit('Generated release tag is invalid')
+
           head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-          if commit != head:
-              raise SystemExit('Checkout does not match the version tag')
-          content = Path('app/build.gradle.kts').read_text(encoding='utf-8')
-          version = re.search(r'versionName\s*=\s*"([^"]+)"', content)[1]
-          if tag != 'v' + version:
-              raise SystemExit('Tag must match versionName in app/build.gradle.kts')
+          event = os.environ['GITHUB_EVENT_NAME']
+
+          if event == 'workflow_dispatch':
+              if os.environ['GITHUB_REF'] != 'refs/heads/main':
+                  raise SystemExit('Run release dispatch from main; release tags are generated automatically.')
+              remote = subprocess.run(
+                  ['git', 'ls-remote', '--exit-code', '--tags', 'origin', f'refs/tags/{tag}'],
+                  text=True, capture_output=True
+              )
+              if remote.returncode == 0:
+                  subprocess.run(['git', 'fetch', 'origin', f'refs/tags/{tag}:refs/tags/{tag}'], check=True)
+                  existing = subprocess.check_output(
+                      ['git', 'rev-list', '-n', '1', tag], text=True
+                  ).strip()
+                  if existing != head:
+                      raise SystemExit(
+                          f'Tag {tag} already exists on another commit. Bump versionName/versionCode; existing tags are never moved.'
+                      )
+              elif remote.returncode == 2:
+                  subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'], check=True)
+                  subprocess.run(
+                      ['git', 'config', 'user.email', '41898282+github-actions[bot]@users.noreply.github.com'],
+                      check=True
+                  )
+                  subprocess.run(['git', 'tag', '-a', tag, '-m', f'GestureEVO {version}'], check=True)
+                  subprocess.run(['git', 'push', 'origin', tag], check=True)
+              else:
+                  raise SystemExit('Unable to check remote tags; refusing to create a potentially duplicate tag.')
+          else:
+              pushed_tag = os.environ['GITHUB_REF_NAME']
+              if pushed_tag != tag:
+                  raise SystemExit(
+                      f'Tag/version mismatch: pushed {pushed_tag}, but app/build.gradle.kts declares {tag}.'
+                  )
+              tagged_commit = subprocess.check_output(
+                  ['git', 'rev-parse', f'refs/tags/{tag}^{{commit}}'], text=True
+              ).strip()
+              if tagged_commit != head:
+                  raise SystemExit('Checked-out commit does not match the pushed release tag.')
+
           with open(os.environ['GITHUB_ENV'], 'a', encoding='utf-8') as output:
-              output.write(f'RELEASE_VERSION={version}\n')
+              output.write(f'RELEASE_TAG={tag}\\n')
+              output.write(f'RELEASE_VERSION={version}\\n')
+          print(f'Release version: {version}')
+          print(f'Release tag: {tag}')
           PY
+
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
+
       - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
       - name: Install fixed Android toolchain
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
-      - name: Build signed APK and run tests
+
+      - name: Validate release keystore and certificate identity
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           GESTUREEVO_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -82,68 +132,106 @@ jobs:
           )
           for name in KEYSTORE_BASE64 GESTUREEVO_KEYSTORE_PASSWORD GESTUREEVO_KEY_ALIAS GESTUREEVO_KEY_PASSWORD; do
             if [[ -z "${!name}" ]]; then
-              echo "::error::Missing GitHub Actions secret: ${required_secrets[$name]}. Add it under Settings > Environments > release (or repository Actions secrets)."
+              echo "::error::Missing GitHub Actions secret: ${required_secrets[$name]}"
               exit 1
             fi
           done
+
           export GESTUREEVO_KEYSTORE_FILE="$RUNNER_TEMP/gestureevo-release.jks"
-          trap 'rm -f -- "$GESTUREEVO_KEYSTORE_FILE"' EXIT
-          # Normalize Base64 safely, restore omitted padding, and report metadata only.
+          trap 'rm -f -- "$GESTUREEVO_KEYSTORE_FILE" "$RUNNER_TEMP/gestureevo-keytool.log" "$RUNNER_TEMP/keystore-cert.der"' EXIT
+
           python - <<'PY'
           import base64
           import os
           import re
           from pathlib import Path
+
           raw = os.environ['KEYSTORE_BASE64']
-          compact = re.sub(r'\s+', '', raw).replace('-', '+').replace('_', '/')
+          compact = re.sub(r'\\s+', '', raw).replace('-', '+').replace('_', '/')
           invalid = re.sub(r'[A-Za-z0-9+/=]', '', compact)
           payload = compact.rstrip('=')
           if '=' in payload:
-              raise SystemExit('::error::Keystore Base64 has padding in the middle; copy the complete file contents, without labels.')
+              raise SystemExit('::error::Keystore Base64 has padding in the middle.')
           remainder = len(payload) % 4
-          print(f'Keystore Base64 diagnostics: chars={len(compact)}, invalid_chars={len(invalid)}, length_mod4={remainder}, trailing_padding={len(compact)-len(payload)}')
-          if invalid:
-              raise SystemExit('::error::Keystore Base64 contains non-Base64 characters; copy only the contents of ANDROID_KEYSTORE_BASE64.txt.')
-          if remainder == 1:
-              raise SystemExit('::error::Keystore Base64 is truncated or corrupted (length modulo 4 is 1). Recreate the secret from the original file.')
-          encoded = payload + ('=' * ((4 - remainder) % 4))
+          print(
+              f'Keystore Base64 diagnostics: chars={len(compact)}, '
+              f'invalid_chars={len(invalid)}, length_mod4={remainder}, '
+              f'trailing_padding={len(compact)-len(payload)}'
+          )
+          if invalid or remainder == 1:
+              raise SystemExit('::error::Keystore Base64 is invalid or truncated.')
           try:
-              decoded = base64.b64decode(encoded, validate=True)
+              decoded = base64.b64decode(payload + ('=' * ((4 - remainder) % 4)), validate=True)
           except Exception:
-              raise SystemExit('::error::Keystore Base64 could not be decoded; the secret is incomplete or corrupted.')
+              raise SystemExit('::error::Keystore Base64 decoding failed.')
           if not decoded:
               raise SystemExit('::error::Decoded keystore is empty.')
           Path(os.environ['GESTUREEVO_KEYSTORE_FILE']).write_bytes(decoded)
           print(f'Keystore decoded successfully: {len(decoded)} bytes.')
           PY
           chmod 600 "$GESTUREEVO_KEYSTORE_FILE"
-          # Validate the keystore and alias separately so failures are diagnosable.
+
           KEYTOOL_LOG="$RUNNER_TEMP/gestureevo-keytool.log"
           if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" >/dev/null 2>"$KEYTOOL_LOG"; then
-            echo "::error::The decoded file is not a readable keystore with the configured store password. Check that ANDROID_KEYSTORE_BASE64 contains the complete encoded .jks file and that ANDROID_KEYSTORE_PASSWORD matches it."
-            sed -E 's/(password|storepass)[^.]*/\\1 [redacted]/Ig' "$KEYTOOL_LOG" | tail -n 3
-            exit 1
-          fi
-          if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" -alias "$GESTUREEVO_KEY_ALIAS" >/dev/null 2>"$KEYTOOL_LOG"; then
-            echo "::error::The keystore opened successfully, but ANDROID_KEY_ALIAS was not found. Check the configured alias; it must match the alias inside the keystore."
+            echo "::error::Keystore cannot be opened with ANDROID_KEYSTORE_PASSWORD."
             tail -n 3 "$KEYTOOL_LOG"
             exit 1
           fi
-          # Bound compiler memory and compile the two variants sequentially.
+          if ! keytool -list -keystore "$GESTUREEVO_KEYSTORE_FILE" -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" -alias "$GESTUREEVO_KEY_ALIAS" >/dev/null 2>"$KEYTOOL_LOG"; then
+            echo "::error::ANDROID_KEY_ALIAS does not exist in the configured keystore."
+            tail -n 3 "$KEYTOOL_LOG"
+            exit 1
+          fi
+
+          expected="$(tr -d '[:space:]' < signing/release-certificate.sha256 | tr '[:upper:]' '[:lower:]')"
+          if [[ ! "$expected" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::Published release certificate fingerprint file is malformed."
+            exit 1
+          fi
+
+          pem_fingerprint="$(openssl x509 -in signing/release-certificate.pem -outform DER | sha256sum | awk '{print $1}')"
+          if [[ "$pem_fingerprint" != "$expected" ]]; then
+            echo "::error::The published PEM certificate does not match signing/release-certificate.sha256."
+            exit 1
+          fi
+
+          keytool -exportcert -keystore "$GESTUREEVO_KEYSTORE_FILE" \
+            -storepass "$GESTUREEVO_KEYSTORE_PASSWORD" -alias "$GESTUREEVO_KEY_ALIAS" \
+            -file "$RUNNER_TEMP/keystore-cert.der" >/dev/null 2>"$KEYTOOL_LOG"
+          keystore_fingerprint="$(sha256sum "$RUNNER_TEMP/keystore-cert.der" | awk '{print $1}')"
+          if [[ "$keystore_fingerprint" != "$expected" ]]; then
+            echo "::error::The configured keystore alias does not match the published release certificate."
+            echo "Expected: $expected"
+            echo "Keystore: $keystore_fingerprint"
+            exit 1
+          fi
+          echo "Keystore, alias and published certificate identity verified: $expected"
+
+      - name: Build signed APK and run tests
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          GESTUREEVO_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          GESTUREEVO_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          GESTUREEVO_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
           sh gradlew :app:testDebugUnitTest --no-daemon --no-configuration-cache --max-workers=2 -Pkotlin.daemon.jvmargs=-Xmx4096m
           sh gradlew :app:assembleRelease --no-daemon --no-configuration-cache --max-workers=2 -Pkotlin.daemon.jvmargs=-Xmx4096m
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk > "$RUNNER_TEMP/signing-certificate.txt"
           python - <<'PY'
-          import os
           import re
           from pathlib import Path
-          report = (Path(os.environ['RUNNER_TEMP']) / 'signing-certificate.txt').read_text()
-          fingerprints = re.findall(r'Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)', report)
+
+          report = Path(__import__('os').environ['RUNNER_TEMP'], 'signing-certificate.txt').read_text()
+          fingerprints = re.findall(
+              r'Signer #\\d+ certificate SHA-256 digest: ([0-9a-fA-F]+)', report
+          )
           expected = Path('signing/release-certificate.sha256').read_text().strip().lower()
           if [value.lower() for value in fingerprints] != [expected]:
               raise SystemExit('APK signing certificate does not match the published release identity')
+          print('APK signature certificate matches the published release identity.')
           PY
+
       - name: Prepare APK, checksum and corresponding source
         run: |
           mkdir -p build/release-assets
@@ -152,6 +240,7 @@ jobs:
           cp LICENSE NOTICE build/release-assets/
           cp signing/release-certificate.pem signing/release-certificate.sha256 build/release-assets/
           (cd build/release-assets && sha256sum -- *.apk *-source.zip > SHA256SUMS)
+
       - name: Retain release build artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -159,6 +248,7 @@ jobs:
           path: build/release-assets/
           if-no-files-found: error
           retention-days: 30
+
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -167,11 +257,15 @@ jobs:
           release_id=$(gh api "repos/$GH_REPO/releases" --paginate --jq ".[] | select(.tag_name == env.RELEASE_TAG) | .id" | head -n 1)
           if [[ -n "$release_id" ]]; then
             is_draft=$(gh api "repos/$GH_REPO/releases/$release_id" --jq '.draft')
-            if [[ "$is_draft" != 'true' ]]; then echo '::error::Refusing to overwrite an already published release'; exit 1; fi
+            if [[ "$is_draft" != 'true' ]]; then
+              echo '::error::Refusing to overwrite an already published release'
+              exit 1
+            fi
             gh release upload "$RELEASE_TAG" build/release-assets/* --clobber
           else
             gh release create "$RELEASE_TAG" build/release-assets/* --verify-tag --draft --title "GestureEVO $RELEASE_VERSION" --generate-notes
           fi
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
