@@ -33,6 +33,7 @@ import io.github.lumiagg.gestureevo.utils.AccessibilityBlacklist
 import io.github.lumiagg.gestureevo.utils.CurrentPackageProvider
 import io.github.lumiagg.gestureevo.utils.DynamicColorUtils
 import io.github.lumiagg.gestureevo.utils.RecentAppsRecorder
+import io.github.lumiagg.gestureevo.utils.root.RootShell
 import io.github.lumiagg.gestureevo.utils.readKey
 import io.github.lumiagg.gestureevo.utils.settingsStore
 import io.github.lumiagg.gestureevo.utils.icon.IconHelper
@@ -229,65 +230,15 @@ class GestureService : AccessibilityService(), CoroutineScope {
         externalDropFloating?.onConfigurationChanged()
     }
 
-    private val takeCaptureService: ExecutorService =
-        ThreadPoolExecutor(1, 2, 30, TimeUnit.SECONDS, ArrayBlockingQueue(10))
-
     /**
      * 请求系统截取当前显示画面，成功时返回独立的可读 Bitmap。
      * 仅支持 Android 11 及以上；调用有超时，失败或系统拒绝时返回 null。
      */
-    suspend fun takeScreenshot(): Bitmap? =
-        withTimeoutOrNull(3500L) {
-            suspendCancellableCoroutine { continuation ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    takeScreenshot(0, takeCaptureService, object : TakeScreenshotCallback {
-                        override fun onSuccess(screenshot: ScreenshotResult) {
-                            if (!continuation.isActive) {
-                                screenshot.hardwareBuffer.close()
-                                return
-                            }
-                            val bitmap = runCatching {
-                                var hardwareBitmap: Bitmap? = null
-                                try {
-                                    hardwareBitmap = Bitmap.wrapHardwareBuffer(
-                                        screenshot.hardwareBuffer,
-                                        screenshot.colorSpace
-                                    )
-                                    hardwareBitmap?.copy(Bitmap.Config.ARGB_8888, true)
-                                } finally {
-                                    hardwareBitmap?.recycle()
-                                    screenshot.hardwareBuffer.close()
-                                }
-                            }.onFailure {
-                                AppLogger.event(
-                                    LogModule.SERVICE, "screenshot_failed",
-                                    LogLevel.ERROR, error = it)
-                            }.getOrNull()
-                            if (bitmap != null) {
-                                Log.d(TAG, "takeScreenshot success")
-                            } else {
-                                Log.d(TAG, "takeScreenshot onFailure: bitmap is null")
-                            }
-                            continuation.resume(bitmap) { bitmap?.recycle() }
-                        }
-
-                        override fun onFailure(errorCode: Int) {
-                            if (!continuation.isActive) return
-                            Log.d(TAG, "takeScreenshot onFailure: $errorCode")
-                            continuation.resume(null) {}
-                        }
-                    })
-                } else {
-                    if (continuation.isActive) {
-                        continuation.resume(null) {}
-                    }
-                }
-            }
-        }.also {
-            if (it == null) {
-                Log.d(TAG, "takeScreenshot timeout or null")
-            }
-        }
+    /**
+     * Captures the current display through the root screencap command.
+     * This path does not depend on AccessibilityService.takeScreenshot().
+     */
+    suspend fun takeScreenshot(): Bitmap? = RootShell.captureScreen(this)
 
     suspend fun takeManagedScreenshot(): ManagedBitmap? =
         takeScreenshot()?.let(ManagedBitmap::from)
@@ -295,34 +246,40 @@ class GestureService : AccessibilityService(), CoroutineScope {
     /**
      * 通过系统手势注入执行单击或双击，并等待系统报告完成或取消。
      */
+    /**
+     * Injects a tap through Android's root input command. A longer duration is represented
+     * by a stationary swipe so the system receives a press rather than an instant tap.
+     */
     suspend fun performClickAsync(
         x: Float,
         y: Float,
         duration: Long = 100L,
         clickCount: Int = 1,
     ): Boolean {
-        if (!x.isFinite() || !y.isFinite() || x < 0 || y < 0 || duration <= 0 || clickCount !in 1..2) {
-            Log.d(TAG, "Click cancelled: invalid gesture parameters")
-            return false
-        }
+        if (!x.isFinite() || !y.isFinite() || x < 0 || y < 0 ||
+            duration !in 1L..10_000L || clickCount !in 1..2
+        ) return false
 
-        val clickPath = Path().apply {
-            moveTo(x, y)
-        }
-
-        val gestureBuilder = GestureDescription.Builder()
-        // Non-overlapping strokes keep a double tap in one accepted gesture, not two races.
         repeat(clickCount) { index ->
-            gestureBuilder.addStroke(GestureDescription.StrokeDescription(
-                clickPath, index * (duration + 80L), duration,
-            ))
+            val px = x.toInt()
+            val py = y.toInt()
+            val result = if (duration <= 150L) {
+                RootShell.tap(px, py)
+            } else {
+                RootShell.swipe(px, py, px, py, duration)
+            }
+            if (!result.isSuccess) return false
+            if (index < clickCount - 1) delay(100L)
         }
-        Log.d(TAG, "performClickAsync: start click")
-        return dispatchGestureAsync(gestureBuilder.build())
+        return true
     }
 
     /**
-     * 注入滑动手势，可选择减速轨迹及到达终点后的短暂停留。
+     * Injects a linear swipe through the root input service.
+     *
+     * Android's public input command cannot keep the same pointer down after the swipe or
+     * reproduce a custom deceleration curve. Those advanced modes return false instead of
+     * silently pretending that the original gesture semantics were preserved.
      */
     suspend fun performSwipeAsync(
         startX: Float,
@@ -333,103 +290,19 @@ class GestureService : AccessibilityService(), CoroutineScope {
         holdDuration: Long = 0L,
         useDecelerationCurve: Boolean = true,
     ): Boolean {
-        if (startX < 0 || startY < 0 || endX < 0 || endY < 0) {
-            Log.d(TAG, "Swipe cancelled: negative position")
+        if (listOf(startX, startY, endX, endY).any { !it.isFinite() || it < 0f }) return false
+        if (holdDuration > 0L || useDecelerationCurve || duration !in 1L..10_000L) {
+            Log.w(TAG, "Requested swipe mode is not supported by the root input backend")
             return false
         }
-
-        val swipePath = if (useDecelerationCurve) {
-            createDecelerationPath(startX, startY, endX, endY)
-        } else {
-            Path().apply {
-                moveTo(startX, startY)
-                lineTo(endX, endY)
-            }
-        }
-
-        // If hold duration is needed, use willContinue param of StrokeDescription
-        val gesture = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            GestureDescription.StrokeDescription(swipePath, 0, duration, holdDuration > 0)
-        } else {
-            GestureDescription.StrokeDescription(swipePath, 0, duration)
-        }
-
-        val gestureBuilder = GestureDescription.Builder().apply {
-            addStroke(gesture)
-
-            // If hold duration is specified, append a stationary stroke
-            if (holdDuration > 0) {
-                val holdPath = Path().apply {
-                    moveTo(endX, endY)
-                    lineTo(endX, endY)  // Stay stationary at end position
-                }
-                val holdStroke = GestureDescription.StrokeDescription(
-                    holdPath,
-                    duration,  // Start after swipe duration
-                    holdDuration
-                )
-                addStroke(holdStroke)
-            }
-        }
-
-        Log.d(
-            TAG,
-            "performSwipeAsync: start swipe from ($startX,$startY) to ($endX,$endY), duration=${duration}ms, hold=${holdDuration}ms"
-        )
-
-        return dispatchGestureAsync(gestureBuilder.build())
+        return RootShell.swipe(
+            startX.toInt(), startY.toInt(), endX.toInt(), endY.toInt(), duration
+        ).isSuccess
     }
 
-    private suspend fun dispatchGestureAsync(gesture: GestureDescription): Boolean =
-        suspendCancellableCoroutine { continuation ->
-            if (!continuation.isActive) return@suspendCancellableCoroutine
-            if (AccessibilityBlacklist.isBlocked(CurrentPackageProvider::resolveCurrentPackageName)) {
-                continuation.resume(false)
-                return@suspendCancellableCoroutine
-            }
-
-            val accepted = dispatchGesture(gesture, object : GestureResultCallback() {
-                override fun onCompleted(gestureDescription: GestureDescription?) {
-                    continuation.resume(true)
-                }
-
-                override fun onCancelled(gestureDescription: GestureDescription?) {
-                    continuation.resume(false)
-                }
-            }, null)
-            if (!accepted) continuation.resume(false)
-        }
-
-    /**
-     * Creates a swipe path with deceleration effect.
-     * Simulates natural finger deceleration using a cubic Bezier curve.
-     */
-    private fun createDecelerationPath(
-        startX: Float,
-        startY: Float,
-        endX: Float,
-        endY: Float
-    ): Path {
-        return Path().apply {
-            moveTo(startX, startY)
-
-            // Calculate control points to create deceleration curve
-            // Create cubic Bezier curve using two control points
-            val deltaX = endX - startX
-            val deltaY = endY - startY
-
-            // First control point: near start, sets higher initial speed
-            val cp1X = startX + deltaX * 0.2f
-            val cp1Y = startY + deltaY * 0.2f
-
-            // Second control point: near end, sets deceleration effect
-            val cp2X = startX + deltaX * 0.7f
-            val cp2Y = startY + deltaY * 0.7f
-
-            cubicTo(cp1X, cp1Y, cp2X, cp2Y, endX, endY)
-        }
-    }
-
+    /** Executes common navigation actions without calling AccessibilityService.performGlobalAction. */
+    suspend fun performGlobalActionRoot(action: Int): Boolean =
+        RootShell.performGlobalAction(action).isSuccess
 
     private inner class GestureBroadcastReceiver : BroadcastReceiver() {
         var isReceiverRegistered = false
